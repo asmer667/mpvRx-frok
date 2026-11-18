@@ -132,3 +132,4 @@ data object FolderCardStylesScreen : app.gyrolet.mpvrx.presentation.Screen {
     }
 }
 
+}
