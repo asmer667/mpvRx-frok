@@ -11,14 +11,12 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun CardStylesPreferenceItem(onClick: () -> Unit) {
-    PreferenceCard {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(16.dp)
-        ) {
-            Text(text = "🎨 تخصيص أشكال وشفافية البطاقات (20 تصميماً)")
-        }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(16.dp)
+    ) {
+        Text(text = "🎨 تخصيص أشكال وشفافية البطاقات (20 تصميماً)")
     }
 }
