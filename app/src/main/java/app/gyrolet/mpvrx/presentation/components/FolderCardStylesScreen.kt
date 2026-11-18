@@ -17,9 +17,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import app.gyrolet.mpvrx.preferences.FolderAndVideoCardPreferences
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun FolderCardStylesScreen(onBack: () -> Unit) {
+@kotlinx.serialization.Serializable
+data object FolderCardStylesScreen : app.gyrolet.mpvrx.presentation.Screen {
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    override fun Content() {
+    val backStack = app.gyrolet.mpvrx.ui.utils.LocalBackStack.current
     val context = LocalContext.current
     val prefs = context.getSharedPreferences("mpvrx_preferences", Context.MODE_PRIVATE)
 
@@ -33,7 +36,7 @@ fun FolderCardStylesScreen(onBack: () -> Unit) {
             TopAppBar(
                 title = { Text("تخصيص أشكال وشفافية البطاقات") },
                 navigationIcon = {
-                    TextButton(onClick = onBack) {
+                    TextButton(onClick = { backStack.popSafely() }) {
                         Text("الرجوع", color = MaterialTheme.colorScheme.primary)
                     }
                 }

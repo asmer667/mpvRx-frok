@@ -396,7 +396,7 @@ PreferenceCard {
                           color = MaterialTheme.colorScheme.outline,
                         )
                       },
-                      onClick = { backstack.navigateTo(FolderCardStylesScreen(onBack = { backstack.popSafely() })) },
+                      onClick = { backstack.navigateTo(app.gyrolet.mpvrx.presentation.components.FolderCardStylesScreen) },
                     )
                   }
 
