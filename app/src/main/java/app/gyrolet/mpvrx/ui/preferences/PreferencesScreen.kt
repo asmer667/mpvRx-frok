@@ -252,7 +252,9 @@ object PreferencesScreen : ScrollableSettingsScreen {
         )
       },
     ) { padding ->
-      LazyColumn(
+      LazyColumn {
+    CardStylesPreferenceItem(onClick = { /* TODO: Navigate */ })
+
         modifier =
           modifier
             .fillMaxSize()
@@ -522,7 +524,9 @@ private fun SettingsSearchEntry(
         tint = MaterialTheme.colorScheme.onSecondaryContainer,
       )
       Spacer(modifier = Modifier.width(14.dp))
-      Column(modifier = Modifier.weight(1f)) {
+      Column {
+    CardStylesPreferenceItem(onClick = { /* TODO: Navigate */ })
+modifier = Modifier.weight(1f)) {
         Text(
           text = stringResource(R.string.settings_search_hint),
           style = MaterialTheme.typography.titleMedium,
@@ -549,13 +553,17 @@ private fun SettingsSectionBlock(
 ) {
   val emphasizedTypography = LocalEmphasizedTypography.current
 
-  Column(
+  Column {
+    CardStylesPreferenceItem(onClick = { /* TODO: Navigate */ })
+
     modifier =
       Modifier
         .fillMaxWidth()
         .padding(top = 10.dp, bottom = 14.dp),
   ) {
-    Column(
+    Column {
+    CardStylesPreferenceItem(onClick = { /* TODO: Navigate */ })
+
       modifier = Modifier.padding(horizontal = 24.dp),
     ) {
       Text(
@@ -589,7 +597,9 @@ private fun SettingsDestinationGroup(
   BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
     // Keep phones legible; spacious settings panes can show connected 2-column bento tiles.
     val columns = if (maxWidth >= 560.dp && section.items.size >= 3) 2 else 1
-    Column(verticalArrangement = Arrangement.spacedBy(AppConnectedShapeTokens.spacing)) {
+    Column {
+    CardStylesPreferenceItem(onClick = { /* TODO: Navigate */ })
+verticalArrangement = Arrangement.spacedBy(AppConnectedShapeTokens.spacing)) {
       section.items.chunked(columns).forEachIndexed { rowIndex, rowItems ->
         if (columns == 1) {
           val item = rowItems.first()
@@ -690,7 +700,9 @@ private fun SettingsDestinationRow(
 
       Spacer(modifier = Modifier.width(14.dp))
 
-      Column(modifier = Modifier.weight(1f)) {
+      Column {
+    CardStylesPreferenceItem(onClick = { /* TODO: Navigate */ })
+modifier = Modifier.weight(1f)) {
         Row(
           horizontalArrangement = Arrangement.spacedBy(8.dp),
           verticalAlignment = Alignment.CenterVertically,
