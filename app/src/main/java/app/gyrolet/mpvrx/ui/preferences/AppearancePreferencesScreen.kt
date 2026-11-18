@@ -369,6 +369,13 @@ object AppearancePreferencesScreen : ScrollableSettingsScreen {
                   )
 
                   PreferenceCard {
+    ExpressivePreferenceItem(
+        title = "تخصيص أشكال وشفافية البطاقات",
+        subtitle = "التحكم في الـ 20 تصميماً والشفافية",
+        onClick = { /* TODO: Open settings */ }
+    )
+}
+PreferenceCard {
                    DevicePreference(R.string.pref_app_icon_title) {
                      ExpressivePreferenceItem {
                      Preference(
