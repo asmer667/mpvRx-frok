@@ -8,8 +8,6 @@
  */
 
 package app.gyrolet.mpvrx.ui.preferences
-import app.gyrolet.mpvrx.presentation.components.FolderCardStylesScreen
-import androidx.compose.runtime.*
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
@@ -31,8 +29,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,22 +37,18 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -97,7 +89,6 @@ import app.gyrolet.mpvrx.ui.utils.ScreenNavDisplay
 import app.gyrolet.mpvrx.ui.utils.popSafely
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
-import kotlin.random.Random
 
 private data class SettingsDestination(
   val title: String,
@@ -110,37 +101,16 @@ private data class SettingsDestination(
 private data class SettingsSection(
   val title: String,
   val tint: Color,
-  val iconContainerColor: Color,
   val items: List<SettingsDestination>,
 )
 
 @Serializable
-object PreferencesScreen : ScrollableSettingsScreen {
-  private var lastIconShapeIndex = -1
-
-  @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+object PreferencesScreen : Screen {
+  @OptIn(ExperimentalMaterial3Api::class)
   @Composable
   override fun Content() {
     val backstack = LocalBackStack.current
     val colorScheme = MaterialTheme.colorScheme
-    val iconShapes = remember {
-      listOf(
-        MaterialShapes.Cookie4Sided,
-        MaterialShapes.Cookie6Sided,
-        MaterialShapes.Clover4Leaf,
-        MaterialShapes.SoftBurst,
-        MaterialShapes.Gem,
-      )
-    }
-    val iconShapeIndex = rememberSaveable {
-      if (lastIconShapeIndex < 0) {
-        Random.nextInt(iconShapes.size)
-      } else {
-        (lastIconShapeIndex + Random.nextInt(1, iconShapes.size)) % iconShapes.size
-      }
-    }
-    SideEffect { lastIconShapeIndex = iconShapeIndex }
-    val iconShape = iconShapes[iconShapeIndex].toShape()
     val television = isTelevision()
     val sections = settingsSections().mapNotNull { section ->
       val items = section.items.filter { !television || TvSettingsPolicy.supportsScreen(it.screen) }
@@ -148,10 +118,9 @@ object PreferencesScreen : ScrollableSettingsScreen {
     }
 
     val configuration = LocalConfiguration.current
-    val useTwoPane = television || configuration.screenWidthDp >= 600
-    val categoryPaneFraction = if (!television && configuration.screenWidthDp < 840) 0.5f else 0.4f
+    val isTablet = configuration.smallestScreenWidthDp >= 600
 
-    if (useTwoPane) {
+    if (isTablet || television) {
       @Suppress("UNCHECKED_CAST")
       val detailBackstack = rememberNavBackStack(AppearancePreferencesScreen) as NavBackStack<Screen>
       val selectedScreen = detailBackstack.first()
@@ -163,10 +132,9 @@ object PreferencesScreen : ScrollableSettingsScreen {
         if (!TvFocusMemory.restore(PreferencesScreen)) categoryFocusRequester.tryRequestFocus()
       }
       Row(modifier = Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.weight(categoryPaneFraction).tvFocusGroup()) {
+        Box(modifier = Modifier.weight(0.4f).tvFocusGroup()) {
           SettingsPane(
             sections = sections,
-            iconShape = iconShape,
             selectedScreen = selectedScreen,
             modifier = Modifier.focusRequester(categoryFocusRequester),
             onScreenSelected = { screen ->
@@ -189,7 +157,7 @@ object PreferencesScreen : ScrollableSettingsScreen {
           color = colorScheme.outlineVariant.copy(alpha = 0.5f),
           thickness = 1.dp,
         )
-        Box(modifier = Modifier.weight(1f - categoryPaneFraction).onFocusChanged { focus ->
+        Box(modifier = Modifier.weight(0.6f).onFocusChanged { focus ->
           detailPaneFocused = focus.hasFocus
           if (focus.hasFocus) detailPaneActivated = true
         }.tvFocusGroup()) {
@@ -211,7 +179,6 @@ object PreferencesScreen : ScrollableSettingsScreen {
     } else {
       SettingsPane(
         sections = sections,
-        iconShape = iconShape,
         selectedScreen = null,
         onScreenSelected = { backstack.navigateTo(it) },
       )
@@ -222,7 +189,6 @@ object PreferencesScreen : ScrollableSettingsScreen {
   @Composable
   private fun SettingsPane(
     sections: List<SettingsSection>,
-    iconShape: Shape,
     selectedScreen: Screen?,
     onScreenSelected: (Screen) -> Unit,
     modifier: Modifier = Modifier,
@@ -252,15 +218,13 @@ object PreferencesScreen : ScrollableSettingsScreen {
         )
       },
     ) { padding ->
-      LazyColumn {
-    CardStylesPreferenceItem(onClick = { /* TODO: Navigate */ })
-
+      LazyColumn(
         modifier =
           modifier
             .fillMaxSize()
             .tvContentFocus()
             .padding(padding),
-        contentPadding = settingsContentPadding(PaddingValues(bottom = 28.dp)),
+        contentPadding = PaddingValues(bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
       ) {
         item {
@@ -276,7 +240,6 @@ object PreferencesScreen : ScrollableSettingsScreen {
         items(sections, key = { it.title }) { section ->
           SettingsSectionBlock(
             section = section,
-            iconShape = iconShape,
             selectedScreen = selectedScreen,
             onItemClick = { destination -> onScreenSelected(destination.screen) },
           )
@@ -294,8 +257,7 @@ object PreferencesScreen : ScrollableSettingsScreen {
     return listOfNotNull(
       SettingsSection(
         title = stringResource(R.string.pref_section_appearance),
-        tint = colorScheme.onPrimaryContainer,
-        iconContainerColor = colorScheme.primaryContainer,
+        tint = colorScheme.onSurfaceVariant,
         items =
           listOf(
             SettingsDestination(
@@ -320,8 +282,7 @@ object PreferencesScreen : ScrollableSettingsScreen {
       ),
       SettingsSection(
         title = stringResource(R.string.pref_section_playback),
-        tint = colorScheme.onSecondaryContainer,
-        iconContainerColor = colorScheme.secondaryContainer,
+        tint = colorScheme.onSurfaceVariant,
         items =
           listOf(
             SettingsDestination(
@@ -358,8 +319,7 @@ object PreferencesScreen : ScrollableSettingsScreen {
       ),
       SettingsSection(
         title = stringResource(if (television) R.string.pref_section_display_controls else R.string.pref_section_gestures_controls),
-        tint = colorScheme.onTertiaryContainer,
-        iconContainerColor = colorScheme.tertiaryContainer,
+        tint = colorScheme.onSurfaceVariant,
         items =
           listOf(
             SettingsDestination(
@@ -378,8 +338,7 @@ object PreferencesScreen : ScrollableSettingsScreen {
       ),
       SettingsSection(
         title = stringResource(R.string.pref_section_storage),
-        tint = colorScheme.onPrimaryContainer,
-        iconContainerColor = colorScheme.primaryContainer,
+        tint = colorScheme.onSurfaceVariant,
         items =
           listOfNotNull(
             SettingsDestination(
@@ -402,8 +361,7 @@ object PreferencesScreen : ScrollableSettingsScreen {
       ),
       SettingsSection(
         title = stringResource(R.string.ui_network),
-        tint = colorScheme.onSecondaryContainer,
-        iconContainerColor = colorScheme.secondaryContainer,
+        tint = colorScheme.onSurfaceVariant,
         items =
           listOfNotNull(
             if (app.gyrolet.mpvrx.BuildConfig.ENABLE_YTDLP || !app.gyrolet.mpvrx.BuildConfig.IS_PLAY_STORE_BUILD) {
@@ -432,8 +390,7 @@ object PreferencesScreen : ScrollableSettingsScreen {
       ),
       SettingsSection(
         title = stringResource(R.string.pref_section_ai),
-        tint = colorScheme.onTertiaryContainer,
-        iconContainerColor = colorScheme.tertiaryContainer,
+        tint = colorScheme.onSurfaceVariant,
         items =
           listOf(
             SettingsDestination(
@@ -446,8 +403,7 @@ object PreferencesScreen : ScrollableSettingsScreen {
       ).takeUnless { app.gyrolet.mpvrx.BuildConfig.IS_PLAY_STORE_BUILD },
       SettingsSection(
         title = stringResource(R.string.pref_section_advanced),
-        tint = colorScheme.onPrimaryContainer,
-        iconContainerColor = colorScheme.primaryContainer,
+        tint = colorScheme.onSurfaceVariant,
         items =
           listOf(
             SettingsDestination(
@@ -471,8 +427,7 @@ object PreferencesScreen : ScrollableSettingsScreen {
       ),
       SettingsSection(
         title = stringResource(R.string.pref_section_about),
-        tint = colorScheme.onTertiaryContainer,
-        iconContainerColor = colorScheme.tertiaryContainer,
+        tint = colorScheme.onSurfaceVariant,
         items =
           listOf(
             SettingsDestination(
@@ -524,9 +479,7 @@ private fun SettingsSearchEntry(
         tint = MaterialTheme.colorScheme.onSecondaryContainer,
       )
       Spacer(modifier = Modifier.width(14.dp))
-      Column {
-    CardStylesPreferenceItem(onClick = { /* TODO: Navigate */ })
-modifier = Modifier.weight(1f)) {
+      Column(modifier = Modifier.weight(1f)) {
         Text(
           text = stringResource(R.string.settings_search_hint),
           style = MaterialTheme.typography.titleMedium,
@@ -547,23 +500,18 @@ modifier = Modifier.weight(1f)) {
 @Composable
 private fun SettingsSectionBlock(
   section: SettingsSection,
-  iconShape: Shape,
   selectedScreen: Screen?,
   onItemClick: (SettingsDestination) -> Unit,
 ) {
   val emphasizedTypography = LocalEmphasizedTypography.current
 
-  Column {
-    CardStylesPreferenceItem(onClick = { /* TODO: Navigate */ })
-
+  Column(
     modifier =
       Modifier
         .fillMaxWidth()
         .padding(top = 10.dp, bottom = 14.dp),
   ) {
-    Column {
-    CardStylesPreferenceItem(onClick = { /* TODO: Navigate */ })
-
+    Column(
       modifier = Modifier.padding(horizontal = 24.dp),
     ) {
       Text(
@@ -578,7 +526,6 @@ private fun SettingsSectionBlock(
 
     SettingsDestinationGroup(
       section = section,
-      iconShape = iconShape,
       selectedScreen = selectedScreen,
       onItemClick = onItemClick,
       modifier = Modifier.padding(horizontal = 16.dp),
@@ -589,7 +536,6 @@ private fun SettingsSectionBlock(
 @Composable
 private fun SettingsDestinationGroup(
   section: SettingsSection,
-  iconShape: Shape,
   selectedScreen: Screen?,
   onItemClick: (SettingsDestination) -> Unit,
   modifier: Modifier = Modifier,
@@ -597,9 +543,7 @@ private fun SettingsDestinationGroup(
   BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
     // Keep phones legible; spacious settings panes can show connected 2-column bento tiles.
     val columns = if (maxWidth >= 560.dp && section.items.size >= 3) 2 else 1
-    Column {
-    CardStylesPreferenceItem(onClick = { /* TODO: Navigate */ })
-verticalArrangement = Arrangement.spacedBy(AppConnectedShapeTokens.spacing)) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppConnectedShapeTokens.spacing)) {
       section.items.chunked(columns).forEachIndexed { rowIndex, rowItems ->
         if (columns == 1) {
           val item = rowItems.first()
@@ -608,8 +552,6 @@ verticalArrangement = Arrangement.spacedBy(AppConnectedShapeTokens.spacing)) {
             index = rowIndex,
             itemCount = section.items.size,
             tint = section.tint,
-            iconContainerColor = section.iconContainerColor,
-            iconShape = iconShape,
             isSelected = selectedScreen == item.screen,
             onClick = { onItemClick(item) },
           )
@@ -621,8 +563,6 @@ verticalArrangement = Arrangement.spacedBy(AppConnectedShapeTokens.spacing)) {
                 index = rowIndex * columns + columnIndex,
                 itemCount = section.items.size,
                 tint = section.tint,
-                iconContainerColor = section.iconContainerColor,
-                iconShape = iconShape,
                 isSelected = selectedScreen == item.screen,
                 onClick = { onItemClick(item) },
                 modifier = Modifier.weight(1f),
@@ -643,8 +583,6 @@ private fun SettingsDestinationRow(
   index: Int,
   itemCount: Int,
   tint: Color,
-  iconContainerColor: Color,
-  iconShape: Shape,
   isSelected: Boolean,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
@@ -682,8 +620,8 @@ private fun SettingsDestinationRow(
       verticalAlignment = Alignment.CenterVertically,
     ) {
       Surface(
-        shape = iconShape,
-        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else iconContainerColor,
+        shape = MaterialTheme.shapes.largeIncreased,
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
       ) {
         Box(
           modifier = Modifier.size(48.dp),
@@ -700,9 +638,7 @@ private fun SettingsDestinationRow(
 
       Spacer(modifier = Modifier.width(14.dp))
 
-      Column {
-    CardStylesPreferenceItem(onClick = { /* TODO: Navigate */ })
-modifier = Modifier.weight(1f)) {
+      Column(modifier = Modifier.weight(1f)) {
         Row(
           horizontalArrangement = Arrangement.spacedBy(8.dp),
           verticalAlignment = Alignment.CenterVertically,

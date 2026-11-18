@@ -76,6 +76,7 @@ import app.gyrolet.mpvrx.ui.theme.LocalThemeTransitionState
 import app.gyrolet.mpvrx.ui.utils.LocalBackStack
 import app.gyrolet.mpvrx.ui.utils.navigateTo
 import app.gyrolet.mpvrx.ui.utils.popSafely
+import app.gyrolet.mpvrx.presentation.components.FolderCardStylesScreen
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
@@ -368,13 +369,6 @@ object AppearancePreferencesScreen : ScrollableSettingsScreen {
                     onClick = { backstack.navigateTo(WallpaperEditorScreen()) },
                   )
 
-                  PreferenceCard {
-    ExpressivePreferenceItem(
-        title = "تخصيص أشكال وشفافية البطاقات",
-        subtitle = "التحكم في الـ 20 تصميماً والشفافية",
-        onClick = { /* TODO: Open settings */ }
-    )
-}
 PreferenceCard {
                    DevicePreference(R.string.pref_app_icon_title) {
                      ExpressivePreferenceItem {
@@ -393,6 +387,20 @@ PreferenceCard {
 
                     PreferenceDivider()
                    }
+
+                  ExpressivePreferenceItem {
+                    Preference(
+                      title = { Text("تخصيص أشكال وشفافية البطاقات") },
+                      summary = {
+                        Text("التحكم في الـ 20 تصميماً والشفافية للمجلدات والفيديوهات",
+                          color = MaterialTheme.colorScheme.outline,
+                        )
+                      },
+                      onClick = { backstack.navigateTo(FolderCardStylesScreen(onBack = { backstack.popSafely() })) },
+                    )
+                  }
+
+                  PreferenceDivider()
 
                   ExpressivePreferenceItem {
                     Preference(
