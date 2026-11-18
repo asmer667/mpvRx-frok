@@ -9,6 +9,8 @@
 
 package app.gyrolet.mpvrx.ui.preferences
 
+import app.gyrolet.mpvrx.ui.preferences.CardStylesPreferenceItem
+
 import android.app.Activity
 import app.gyrolet.mpvrx.ui.components.AppToast as Toast
 import app.gyrolet.mpvrx.ui.components.AppToastType
