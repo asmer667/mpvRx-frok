@@ -174,7 +174,7 @@ private fun VideoTopStartBadges(
 ) {
   if (!isPinned && !showNewLabel) return
   Row(
-    modifier = modifier.then(customModifier),
+    modifier = modifier,
     horizontalArrangement = Arrangement.spacedBy(4.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
@@ -328,6 +328,7 @@ fun VideoCard(
     modifier =
       modifier
         .fillMaxWidth()
+        .then(customModifier)
         .tvFocusMemory("video:${video.path}")
         .tvFocusHighlight(cardShape, focusedScale = 1.03f)
         .clip(cardShape)

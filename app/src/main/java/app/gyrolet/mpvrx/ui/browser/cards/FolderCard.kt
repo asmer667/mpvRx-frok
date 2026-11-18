@@ -275,7 +275,7 @@ fun FolderCard(
       color = MaterialTheme.colorScheme.primary,
       contentColor = MaterialTheme.colorScheme.onPrimary,
       shadowElevation = 3.dp,
-      modifier = modifier.then(customModifier).rotate(-18f),
+      modifier = modifier.rotate(-18f),
     ) {
       Icon(
         imageVector = Icons.RoundedFilled.PushPin,
@@ -309,6 +309,7 @@ fun FolderCard(
     modifier =
       modifier
         .fillMaxWidth()
+        .then(customModifier)
         .then(if (isGridMode && gridRowMinHeight > 0.dp) Modifier.heightIn(min = gridRowMinHeight) else Modifier)
         .tvFocusMemory("folder:${folder.bucketId}:${folder.path}")
         .tvFocusHighlight(cardShape, focusedScale = 1.03f)
