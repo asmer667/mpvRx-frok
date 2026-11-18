@@ -2,15 +2,16 @@ package app.gyrolet.mpvrx.presentation.components
 
 import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -18,85 +19,111 @@ import app.gyrolet.mpvrx.preferences.FolderAndVideoCardPreferences
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FolderCardStylesScreen(isFolderMode: Boolean, onBackClick: () -> Unit) {
+fun FolderCardStylesScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val prefs = context.getSharedPreferences("mpvrx_preferences", Context.MODE_PRIVATE)
 
-    var selectedStyle by remember {
-        mutableStateOf(
-            if (isFolderMode) FolderAndVideoCardPreferences.getFolderStyle(prefs)
-            else FolderAndVideoCardPreferences.getVideoStyle(prefs)
-        )
-    }
-
-    var opacity by remember {
-        mutableStateOf(
-            if (isFolderMode) FolderAndVideoCardPreferences.getFolderOpacity(prefs)
-            else FolderAndVideoCardPreferences.getVideoOpacity(prefs)
-        )
-    }
+    var folderStyle by remember { mutableStateOf(FolderAndVideoCardPreferences.getFolderStyle(prefs)) }
+    var videoStyle by remember { mutableStateOf(FolderAndVideoCardPreferences.getVideoStyle(prefs)) }
+    var folderOpacity by remember { mutableStateOf(FolderAndVideoCardPreferences.getFolderOpacity(prefs)) }
+    var videoOpacity by remember { mutableStateOf(FolderAndVideoCardPreferences.getVideoOpacity(prefs)) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isFolderMode) "تخصيص بطاقات المجلدات" else "تخصيص بطاقات الفيديو") },
+                title = { Text("تخصيص أشكال وشفافية البطاقات") },
                 navigationIcon = {
-                    TextButton(onClick = onBackClick) { Text("رجوع", color = MaterialTheme.colorScheme.primary) }
+                    TextButton(onClick = onBack) {
+                        Text("الرجوع", color = MaterialTheme.colorScheme.primary)
+                    }
                 }
             )
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
-            Text("اختر التصميم (من 1 إلى 20):", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                Text("شفافية بطاقات المجلدات: ${(folderOpacity * 100).toInt()}%", style = MaterialTheme.typography.titleMedium)
+                Slider(
+                    value = folderOpacity,
+                    onValueChange = {
+                        folderOpacity = it
+                        FolderAndVideoCardPreferences.setFolderOpacity(prefs, it)
+                    },
+                    valueRange = 0.1f..1.0f
+                )
+            }
 
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(4),
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(20) { index ->
-                    val styleId = index + 1
-                    val isSelected = selectedStyle == styleId
-                    val cardModifier = getDynamicCardModifier(styleId, opacity, isFolderMode)
-
-                    Box(
-                        modifier = cardModifier
-                            .height(70.dp)
-                            .clickable {
-                                selectedStyle = styleId
-                                if (isFolderMode) {
-                                    FolderAndVideoCardPreferences.setFolderStyle(prefs, styleId)
-                                } else {
-                                    FolderAndVideoCardPreferences.setVideoStyle(prefs, styleId)
-                                }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "$styleId",
-                            color = if (isSelected) Color.Yellow else Color.White,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
+            item {
+                Text("تصميم بطاقات المجلدات (اختر من 1 إلى 20): $folderStyle", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Button(onClick = {
+                        if (folderStyle > 1) folderStyle--
+                        else folderStyle = 20
+                        FolderAndVideoCardPreferences.setFolderStyle(prefs, folderStyle)
+                    }) {
+                        Text("السابق")
+                    }
+                    Text("التصميم الحالي: $folderStyle", modifier = Modifier.align(Alignment.CenterVertically))
+                    Button(onClick = {
+                        if (folderStyle < 20) folderStyle++
+                        else folderStyle = 1
+                        FolderAndVideoCardPreferences.setFolderStyle(prefs, folderStyle)
+                    }) {
+                        Text("التالي")
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("درجة الشفافية: ${(opacity * 100).toInt()}%", style = MaterialTheme.typography.bodyMedium)
-            Slider(
-                value = opacity,
-                onValueChange = { newOpacity ->
-                    opacity = newOpacity
-                    if (isFolderMode) {
-                        FolderAndVideoCardPreferences.setFolderOpacity(prefs, newOpacity)
-                    } else {
-                        FolderAndVideoCardPreferences.setVideoOpacity(prefs, newOpacity)
+            item {
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+            }
+
+            item {
+                Text("شفافية بطاقات الفيديوهات: ${(videoOpacity * 100).toInt()}%", style = MaterialTheme.typography.titleMedium)
+                Slider(
+                    value = videoOpacity,
+                    onValueChange = {
+                        videoOpacity = it
+                        FolderAndVideoCardPreferences.setVideoOpacity(prefs, it)
+                    },
+                    valueRange = 0.1f..1.0f
+                )
+            }
+
+            item {
+                Text("تصميم بطاقات الفيديوهات (اختر من 1 إلى 20): $videoStyle", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Button(onClick = {
+                        if (videoStyle > 1) videoStyle--
+                        else videoStyle = 20
+                        FolderAndVideoCardPreferences.setVideoStyle(prefs, videoStyle)
+                    }) {
+                        Text("السابق")
                     }
-                },
-                valueRange = 0.2f..1f
-            )
+                    Text("التصميم الحالي: $videoStyle", modifier = Modifier.align(Alignment.CenterVertically))
+                    Button(onClick = {
+                        if (videoStyle < 20) videoStyle++
+                        else videoStyle = 1
+                        FolderAndVideoCardPreferences.setVideoStyle(prefs, videoStyle)
+                    }) {
+                        Text("التالي")
+                    }
+                }
+            }
         }
     }
 }
