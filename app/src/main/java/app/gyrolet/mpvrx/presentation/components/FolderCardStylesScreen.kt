@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import app.gyrolet.mpvrx.preferences.FolderAndVideoCardPreferences
+import app.gyrolet.mpvrx.ui.utils.popSafely
 
 @kotlinx.serialization.Serializable
 data object FolderCardStylesScreen : app.gyrolet.mpvrx.presentation.Screen {
@@ -130,3 +131,4 @@ data object FolderCardStylesScreen : app.gyrolet.mpvrx.presentation.Screen {
         }
     }
 }
+
