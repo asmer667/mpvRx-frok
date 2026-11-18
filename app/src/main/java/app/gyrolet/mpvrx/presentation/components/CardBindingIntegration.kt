@@ -7,7 +7,7 @@ import androidx.compose.ui.platform.LocalContext
 import app.gyrolet.mpvrx.preferences.FolderAndVideoCardPreferences
 
 @Composable
-fun getAppliedCardModifier(isFolder: Boolean): Modifier {
+fun rememberAppliedCardModifier(isFolder: Boolean): Modifier {
     val context = LocalContext.current
     val sharedPrefs = context.getSharedPreferences("mpvrx_preferences", Context.MODE_PRIVATE)
 

@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import app.gyrolet.mpvrx.presentation.components.rememberAppliedCardModifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
@@ -149,6 +150,8 @@ fun rememberFolderCardUiConfig(viewPreferences: BrowserPageViewPreferences? = nu
 
 @Composable
 fun FolderCard(
+  // Injected dynamic style modifier
+  customModifier: Modifier = rememberAppliedCardModifier(isFolder = true),
   folder: VideoFolder,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
@@ -272,7 +275,7 @@ fun FolderCard(
       color = MaterialTheme.colorScheme.primary,
       contentColor = MaterialTheme.colorScheme.onPrimary,
       shadowElevation = 3.dp,
-      modifier = modifier.rotate(-18f),
+      modifier = modifier.then(customModifier).rotate(-18f),
     ) {
       Icon(
         imageVector = Icons.RoundedFilled.PushPin,

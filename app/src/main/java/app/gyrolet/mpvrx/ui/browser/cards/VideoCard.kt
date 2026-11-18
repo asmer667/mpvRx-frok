@@ -40,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import app.gyrolet.mpvrx.presentation.components.rememberAppliedCardModifier
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.blur
@@ -173,7 +174,7 @@ private fun VideoTopStartBadges(
 ) {
   if (!isPinned && !showNewLabel) return
   Row(
-    modifier = modifier,
+    modifier = modifier.then(customModifier),
     horizontalArrangement = Arrangement.spacedBy(4.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
@@ -211,6 +212,8 @@ private fun VideoTopStartBadges(
 
 @Composable
 fun VideoCard(
+  // Injected dynamic style modifier
+  customModifier: Modifier = rememberAppliedCardModifier(isFolder = false),
   video: Video,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
