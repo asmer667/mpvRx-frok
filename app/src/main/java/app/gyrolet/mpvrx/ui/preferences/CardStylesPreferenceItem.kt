@@ -1,15 +1,22 @@
 package app.gyrolet.mpvrx.ui.preferences
 
 import androidx.compose.runtime.Composable
-import androidx.compose.material3.*
+import androidx.compose.material3.Text
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Modifier
 
 @Composable
-fun CardStylesPreferenceCard(onClick: () -> Unit) {
+fun CardStylesPreferenceItem(onClick: () -> Unit) {
     PreferenceCard {
-        ExpressivePreferenceItem(
-            title = "تخصيص أشكال وشفافية البطاقات",
-            subtitle = "التحكم في الـ 20 تصميماً والشفافية للمجلدات والفيديوهات",
-            onClick = onClick
-        )
+        // استخدام عنصر تفضيلات قياسي أو نص تفاعلي لتجنب أي نقص في معاملات البناء
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .androidx.compose.foundation.layout.padding(16.dp)
+        ) {
+            Text(text = "🎨 تخصيص أشكال وشفافية البطاقات (20 تصميماً)")
+        }
     }
 }
