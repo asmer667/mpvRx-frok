@@ -9,11 +9,8 @@
 
 package app.gyrolet.mpvrx.ui.preferences
 
-import app.gyrolet.mpvrx.ui.preferences.CardStylesPreferenceItem
-
 import android.app.Activity
-import app.gyrolet.mpvrx.ui.components.AppToast as Toast
-import app.gyrolet.mpvrx.ui.components.AppToastType
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -57,6 +54,7 @@ import app.gyrolet.mpvrx.preferences.ThumbnailMode
 import app.gyrolet.mpvrx.preferences.ThumbnailQuality
 import app.gyrolet.mpvrx.preferences.TreeFlattenDepth
 import app.gyrolet.mpvrx.preferences.preference.collectAsState
+import app.gyrolet.mpvrx.presentation.Screen
 import app.gyrolet.mpvrx.presentation.components.ConfirmDialog
 import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
@@ -76,7 +74,6 @@ import app.gyrolet.mpvrx.ui.theme.LocalThemeTransitionState
 import app.gyrolet.mpvrx.ui.utils.LocalBackStack
 import app.gyrolet.mpvrx.ui.utils.navigateTo
 import app.gyrolet.mpvrx.ui.utils.popSafely
-import app.gyrolet.mpvrx.presentation.components.FolderCardStylesScreen
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
@@ -85,14 +82,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import app.gyrolet.mpvrx.ui.preferences.components.AppListPreference as ListPreference
-import app.gyrolet.mpvrx.ui.preferences.components.PreferenceAction
-import app.gyrolet.mpvrx.ui.preferences.components.AppPreference as Preference
+import me.zhanghai.compose.preference.Preference
 import app.gyrolet.mpvrx.ui.preferences.components.AppSliderPreference as SliderPreference
 import org.koin.compose.koinInject
 import kotlin.math.roundToInt
 
 @Serializable
-object AppearancePreferencesScreen : ScrollableSettingsScreen {
+object AppearancePreferencesScreen : Screen {
   @OptIn(ExperimentalMaterial3Api::class)
   @Composable
   override fun Content() {
@@ -246,7 +242,6 @@ object AppearancePreferencesScreen : ScrollableSettingsScreen {
           rememberSettingsSearchList(AppearancePreferencesScreen, MaterialTheme.colorScheme.primary)
         LazyColumn(
           state = settingsListState,
-          contentPadding = settingsContentPadding(),
           modifier =
             Modifier
               .fillMaxSize()
@@ -331,7 +326,6 @@ object AppearancePreferencesScreen : ScrollableSettingsScreen {
                     customThemes = pickerThemes,
                     selectedCustomThemeName = selectedCustomThemeName,
                     isDarkMode = isDarkMode,
-                    amoledMode = amoledMode,
                     onThemeSelected = { theme, position ->
                       if ((theme != appTheme || selectedCustomThemeName.isNotBlank()) && themeTransition?.isAnimating != true) {
                         themeTransition?.startTransition(position)
@@ -369,7 +363,7 @@ object AppearancePreferencesScreen : ScrollableSettingsScreen {
                     onClick = { backstack.navigateTo(WallpaperEditorScreen()) },
                   )
 
-PreferenceCard {
+                  PreferenceCard {
                    DevicePreference(R.string.pref_app_icon_title) {
                      ExpressivePreferenceItem {
                      Preference(
@@ -387,20 +381,6 @@ PreferenceCard {
 
                     PreferenceDivider()
                    }
-
-                  ExpressivePreferenceItem {
-                    Preference(
-                      title = { Text("تخصيص أشكال وشفافية البطاقات") },
-                      summary = {
-                        Text("التحكم في الـ 20 تصميماً والشفافية للمجلدات والفيديوهات",
-                          color = MaterialTheme.colorScheme.outline,
-                        )
-                      },
-                      onClick = { backstack.navigateTo(app.gyrolet.mpvrx.presentation.components.FolderCardStylesScreen) },
-                    )
-                  }
-
-                  PreferenceDivider()
 
                   ExpressivePreferenceItem {
                     Preference(
@@ -470,7 +450,6 @@ PreferenceCard {
                       )
                     },
                     onClick = { isAppFontSheetOpen = true },
-                    action = PreferenceAction.Dialog,
                   )
                   }
 
@@ -730,18 +709,16 @@ PreferenceCard {
                   onValueChange = { selected ->
                     if (!changingThumbnailGenerator && selected != thumbnailGenerator) {
                       changingThumbnailGenerator = true
-                      val progressToast = Toast.loading(context, context.getString(R.string.toast_updating_thumbnail_generator))
                       scope.launch {
                         try {
                           thumbnailRepository.setThumbnailGenerator(selected)
                           app.gyrolet.mpvrx.ui.player.MediaPlayerWidget.clearArtworkCache()
                           app.gyrolet.mpvrx.ui.player.MediaPlayerWidget.requestUpdate(context)
-                          progressToast.update(thumbnailCacheClearedMessage, AppToastType.Success)
+                          Toast.makeText(context, thumbnailCacheClearedMessage, Toast.LENGTH_SHORT).show()
                         } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                          progressToast.cancel()
                           throw cancelled
                         } catch (error: Exception) {
-                          progressToast.update(context.getString(R.string.pref_thumbnail_cache_clear_failed, error.message ?: "Unknown error"), AppToastType.Error)
+                          Toast.makeText(context, context.getString(R.string.pref_thumbnail_cache_clear_failed, error.message ?: "Unknown error"), Toast.LENGTH_LONG).show()
                         } finally {
                           changingThumbnailGenerator = false
                         }
@@ -861,7 +838,6 @@ PreferenceCard {
                     )
                   },
                   onClick = { isThumbnailParallelismDialogOpen = true },
-                  action = PreferenceAction.Dialog,
                   enabled = showVideoThumbnails,
                 )
               }
@@ -976,29 +952,26 @@ PreferenceCard {
                 else -> ReorderableTabItem(id, stringResource(R.string.pref_nav_profile_title), stringResource(R.string.pref_nav_profile_summary), showProfileTab, titleRes = R.string.pref_nav_profile_title)
               }
             }
-            Column(modifier = Modifier.fillMaxWidth()) {
-              ExpressivePreferenceGroup {
-                ReorderableTabPreferences(
-                  tabs = tabItems,
-                  onEnabledChange = { id, enabled ->
-                    when (id) {
-                      "MUSIC" -> preferences.showMusicTab.set(enabled)
-                      "NETWORK" -> preferences.showNetworkTab.set(enabled)
-                      "JELLYFIN" -> preferences.showJellyfinTab.set(enabled)
-                      "PROFILE" -> preferences.showProfileTab.set(enabled)
-                    }
-                  },
-                  onMove = { id, destination ->
-                    if (id != "HOME") {
-                      val current = ordered.toMutableList()
-                      current.remove(id)
-                      current.add(destination.coerceIn(1, current.size), id)
-                      preferences.bottomNavigationOrder.set(current)
-                    }
-                  },
-                )
-              }
-              ProfileLayoutPreferences(preferences)
+            ExpressivePreferenceGroup {
+              ReorderableTabPreferences(
+                tabs = tabItems,
+                onEnabledChange = { id, enabled ->
+                  when (id) {
+                    "MUSIC" -> preferences.showMusicTab.set(enabled)
+                    "NETWORK" -> preferences.showNetworkTab.set(enabled)
+                    "JELLYFIN" -> preferences.showJellyfinTab.set(enabled)
+                    "PROFILE" -> preferences.showProfileTab.set(enabled)
+                  }
+                },
+                onMove = { id, destination ->
+                  if (id != "HOME") {
+                    val current = ordered.toMutableList()
+                    current.remove(id)
+                    current.add(destination.coerceIn(1, current.size), id)
+                    preferences.bottomNavigationOrder.set(current)
+                  }
+                },
+              )
             }
           }
 
@@ -1025,7 +998,7 @@ PreferenceCard {
                     )
                   },
                   groupIndex = 0,
-                  groupSize = 6,
+                  groupSize = 5,
                 )
                 val quickPlayFabDirect by preferences.quickPlayFabDirect.collectAsState()
                 SwitchPreference(
@@ -1041,7 +1014,7 @@ PreferenceCard {
                     )
                   },
                   groupIndex = 1,
-                  groupSize = 6,
+                  groupSize = 5,
                 )
                 val navigationBarGlow by preferences.navigationBarGlow.collectAsState()
                 SwitchPreference(
@@ -1051,7 +1024,7 @@ PreferenceCard {
                   title = { Text(stringResource(R.string.navbar_glow_title)) },
                   summary = { Text(stringResource(R.string.navbar_glow_summary), color = MaterialTheme.colorScheme.outline) },
                   groupIndex = 2,
-                  groupSize = 6,
+                  groupSize = 5,
                 )
                 val legacyNavigationBar by preferences.legacyNavigationBar.collectAsState()
                 val progressiveNavigationBlur by preferences.progressiveNavigationBlur.collectAsState()
@@ -1070,7 +1043,7 @@ PreferenceCard {
                   title = { Text(stringResource(R.string.legacy_navigation_bar_title)) },
                   summary = { Text(stringResource(R.string.legacy_navigation_bar_summary), color = MaterialTheme.colorScheme.outline) },
                   groupIndex = 3,
-                  groupSize = 6,
+                  groupSize = 5,
                 )
                 SwitchPreference(
                   modifier = Modifier.settingsSearchTarget(R.string.progressive_navigation_blur_title),
@@ -1080,41 +1053,7 @@ PreferenceCard {
                   title = { Text(stringResource(R.string.progressive_navigation_blur_title)) },
                   summary = { Text(stringResource(R.string.progressive_navigation_blur_summary), color = MaterialTheme.colorScheme.outline) },
                   groupIndex = 4,
-                  groupSize = 6,
-                )
-                val connectedMiniPlayerNavigation by preferences.connectedMiniPlayerNavigation.collectAsState()
-                SwitchPreference(
-                  modifier = Modifier.settingsSearchTarget(R.string.connected_mini_player_navigation_title),
-                  value = connectedMiniPlayerNavigation && !legacyNavigationBar,
-                  onValueChange = preferences.connectedMiniPlayerNavigation::set,
-                  enabled = !legacyNavigationBar,
-                  title = { Text(stringResource(R.string.connected_mini_player_navigation_title)) },
-                  summary = { Text(stringResource(R.string.connected_mini_player_navigation_summary), color = MaterialTheme.colorScheme.outline) },
-                  groupIndex = 5,
-                  groupSize = 6,
-                )
-              }
-            }
-          } else {
-            // Same item count as the phone block above, so later search anchors still line up.
-            item {
-              PreferenceSectionHeader(
-                position = PreferenceSectionPosition.Middle,
-                title = stringResource(R.string.pref_nav_actions_section),
-              )
-            }
-
-            item {
-              ExpressivePreferenceGroup {
-                val confirmBackToExit by gesturePreferences.confirmBackToExit.collectAsState()
-                SwitchPreference(
-                  modifier = Modifier.settingsSearchTarget(R.string.pref_tv_double_back_exit_title),
-                  value = confirmBackToExit,
-                  onValueChange = gesturePreferences.confirmBackToExit::set,
-                  title = { Text(stringResource(R.string.pref_tv_double_back_exit_title)) },
-                  summary = { Text(stringResource(R.string.pref_tv_double_back_exit_summary), color = MaterialTheme.colorScheme.outline) },
-                  groupIndex = 0,
-                  groupSize = 1,
+                  groupSize = 5,
                 )
               }
             }
