@@ -57,6 +57,7 @@ import app.gyrolet.mpvrx.R
 import app.gyrolet.mpvrx.domain.archive.ZipArchiveMedia
 import app.gyrolet.mpvrx.domain.media.model.VideoFolder
 import app.gyrolet.mpvrx.domain.thumbnail.ThumbnailRepository
+import app.gyrolet.mpvrx.presentation.components.cardAccentDecoration
 import app.gyrolet.mpvrx.preferences.AppearancePreferences
 import app.gyrolet.mpvrx.preferences.BrowserPageViewPreferences
 import app.gyrolet.mpvrx.preferences.BrowserPreferences
@@ -92,6 +93,8 @@ data class FolderCardUiConfig(
   val swipeLeft: VideoSwipeAction = VideoSwipeAction.AddToPlaylist,
   val swipeRight: VideoSwipeAction = VideoSwipeAction.ToggleWatched,
   val thumbnailGenerator: app.gyrolet.mpvrx.preferences.ThumbnailGenerator = app.gyrolet.mpvrx.preferences.ThumbnailGenerator.Auto,
+  val cardAccentStyleId: Int = 1,
+  val cardAccentOpacity: Float = 1f,
 )
 
 /** Hoist this once per screen and pass the result to every card rather than collecting per item. */
@@ -113,6 +116,8 @@ fun rememberFolderCardUiConfig(viewPreferences: BrowserPageViewPreferences? = nu
   val includeAudio by browserPreferences.includeAudioBrowser.collectAsState()
   val swipeLeft by browserPreferences.videoSwipeLeft.collectAsState()
   val swipeRight by browserPreferences.videoSwipeRight.collectAsState()
+  val cardAccentStyleId by appearancePreferences.folderCardStyle.collectAsState()
+  val cardAccentOpacity by appearancePreferences.cardAccentOpacity.collectAsState()
 
   return remember(
     unlimitedNameLines,
@@ -128,6 +133,8 @@ fun rememberFolderCardUiConfig(viewPreferences: BrowserPageViewPreferences? = nu
     includeAudio,
     swipeLeft,
     swipeRight,
+    cardAccentStyleId,
+    cardAccentOpacity,
   ) {
     FolderCardUiConfig(
       unlimitedNameLines = unlimitedNameLines,
@@ -143,6 +150,8 @@ fun rememberFolderCardUiConfig(viewPreferences: BrowserPageViewPreferences? = nu
       includeAudio = includeAudio,
       swipeLeft = swipeLeft,
       swipeRight = swipeRight,
+      cardAccentStyleId = cardAccentStyleId,
+      cardAccentOpacity = cardAccentOpacity,
     )
   }
 }
@@ -191,6 +200,8 @@ fun FolderCard(
   val includeAudio = resolvedUiConfig.includeAudio
   val swipeLeft = resolvedUiConfig.swipeLeft
   val swipeRight = resolvedUiConfig.swipeRight
+  val cardAccentStyle = app.gyrolet.mpvrx.presentation.components.CardAccentStyle.fromId(resolvedUiConfig.cardAccentStyleId)
+  val cardAccentOpacity = resolvedUiConfig.cardAccentOpacity
   val context = androidx.compose.ui.platform.LocalContext.current
   val thumbnailRepository = koinInject<ThumbnailRepository>()
   val thumbnailCacheRevision by thumbnailRepository.cacheRevision.collectAsState()
@@ -328,6 +339,17 @@ fun FolderCard(
             .matchParentSize()
             .clip(cardShape)
             .background(selectionContainerColor),
+      )
+
+      Box(
+        modifier =
+          Modifier
+            .matchParentSize()
+            .cardAccentDecoration(
+              style = cardAccentStyle,
+              opacity = cardAccentOpacity,
+              shape = cardShape,
+            ),
       )
 
       if (isGridMode) {

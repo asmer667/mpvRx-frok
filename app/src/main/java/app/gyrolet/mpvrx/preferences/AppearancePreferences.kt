@@ -78,6 +78,9 @@ class AppearancePreferences(
   val customWallpaperAlpha = preferenceStore.getFloat("custom_wallpaper_alpha", 1f)
   val customWallpaperUseColors = preferenceStore.getBoolean("custom_wallpaper_use_colors", false)
   val amoledMode = preferenceStore.getBoolean("amoled_mode", false)
+  val folderCardStyle = preferenceStore.getInt("folder_card_style", 1)
+  val videoCardStyle = preferenceStore.getInt("video_card_style", 11)
+  val cardAccentOpacity = preferenceStore.getFloat("card_accent_opacity", 1f)
   // Opt-in: glass records the screen behind it every frame and moves player video to a TextureView.
   val liquidGlassEnabled = preferenceStore.getBoolean("liquid_glass_enabled", false)
   val liquidGlassInHdr = preferenceStore.getBoolean("liquid_glass_in_hdr", false)

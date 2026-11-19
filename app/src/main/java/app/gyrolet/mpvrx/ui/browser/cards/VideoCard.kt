@@ -63,6 +63,8 @@ import app.gyrolet.mpvrx.preferences.BrowserPreferences
 import app.gyrolet.mpvrx.preferences.ThumbnailQuality
 import app.gyrolet.mpvrx.preferences.VideoSwipeAction
 import app.gyrolet.mpvrx.presentation.components.RemoteImage
+import app.gyrolet.mpvrx.presentation.components.CardAccentStyle
+import app.gyrolet.mpvrx.presentation.components.cardAccentDecoration
 import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
@@ -95,6 +97,8 @@ data class VideoCardUiConfig(
   val swipeLeft: VideoSwipeAction = VideoSwipeAction.AddToPlaylist,
   val swipeRight: VideoSwipeAction = VideoSwipeAction.ToggleWatched,
   val thumbnailGenerator: app.gyrolet.mpvrx.preferences.ThumbnailGenerator = app.gyrolet.mpvrx.preferences.ThumbnailGenerator.Auto,
+  val cardAccentStyleId: Int = 11,
+  val cardAccentOpacity: Float = 1f,
 )
 
 /** Hoist this once per screen and pass the result to every card rather than collecting per item. */
@@ -121,6 +125,8 @@ fun rememberVideoCardUiConfig(): VideoCardUiConfig {
   val thumbnailGenerator by browserPreferences.thumbnailGenerator.collectAsState()
   val swipeLeft by browserPreferences.videoSwipeLeft.collectAsState()
   val swipeRight by browserPreferences.videoSwipeRight.collectAsState()
+  val cardAccentStyleId by appearancePreferences.videoCardStyle.collectAsState()
+  val cardAccentOpacity by appearancePreferences.cardAccentOpacity.collectAsState()
 
   return remember(
     unlimitedNameLines,
@@ -141,6 +147,8 @@ fun rememberVideoCardUiConfig(): VideoCardUiConfig {
     thumbnailGenerator,
     swipeLeft,
     swipeRight,
+    cardAccentStyleId,
+    cardAccentOpacity,
   ) {
     VideoCardUiConfig(
       unlimitedNameLines = unlimitedNameLines,
@@ -161,6 +169,8 @@ fun rememberVideoCardUiConfig(): VideoCardUiConfig {
       thumbnailGenerator = thumbnailGenerator,
       swipeLeft = swipeLeft,
       swipeRight = swipeRight,
+      cardAccentStyleId = cardAccentStyleId,
+      cardAccentOpacity = cardAccentOpacity,
     )
   }
 }
@@ -248,6 +258,8 @@ fun VideoCard(
   val resolvedUiConfig = uiConfig ?: rememberVideoCardUiConfig()
   val maxLines = if (resolvedUiConfig.unlimitedNameLines) Int.MAX_VALUE else 2
 
+  val cardAccentStyle = CardAccentStyle.fromId(resolvedUiConfig.cardAccentStyleId)
+  val cardAccentOpacity = resolvedUiConfig.cardAccentOpacity
   val showThumbnails = resolvedUiConfig.showThumbnails
   val thumbnailQuality = resolvedUiConfig.thumbnailQuality
   val thumbnailGenerator = resolvedUiConfig.thumbnailGenerator
@@ -345,6 +357,16 @@ fun VideoCard(
             .matchParentSize()
             .clip(cardShape)
             .background(selectionContainerColor),
+      )
+      Box(
+        modifier =
+          Modifier
+            .matchParentSize()
+            .cardAccentDecoration(
+              style = cardAccentStyle,
+              opacity = cardAccentOpacity,
+              shape = cardShape,
+            ),
       )
 
       if (isGridMode) {

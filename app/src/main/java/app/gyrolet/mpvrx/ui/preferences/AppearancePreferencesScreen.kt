@@ -61,6 +61,7 @@ import app.gyrolet.mpvrx.ui.icons.Icons
 import app.gyrolet.mpvrx.ui.player.ControlsAnimationStyle
 import app.gyrolet.mpvrx.ui.player.NavigationAnimStyle
 import app.gyrolet.mpvrx.ui.player.VideoOpenAnimation
+import app.gyrolet.mpvrx.ui.preferences.CardAccentPreferencesScreen
 import app.gyrolet.mpvrx.ui.preferences.components.SwitchPreference
 import app.gyrolet.mpvrx.ui.preferences.components.RestartRequiredDialog
 import app.gyrolet.mpvrx.ui.preferences.components.ThemePicker
@@ -647,6 +648,30 @@ object AppearancePreferencesScreen : ScrollableSettingsScreen {
                 groupIndex = 5,
                 groupSize = itemCount,
               )
+            }
+          }
+
+          item {
+            PreferenceSectionHeader(
+              position = PreferenceSectionPosition.Middle,
+              title = stringResource(R.string.pref_appearance_category_card_customization),
+            )
+          }
+
+          item {
+            ExpressivePreferenceGroup {
+              ExpressivePreferenceItem {
+                Preference(
+                  title = { Text(stringResource(R.string.pref_card_customization_title)) },
+                  summary = {
+                    Text(
+                      stringResource(R.string.pref_card_customization_summary),
+                      color = MaterialTheme.colorScheme.outline,
+                    )
+                  },
+                  onClick = { backstack.navigateTo(CardAccentPreferencesScreen) },
+                )
+              }
             }
           }
 
