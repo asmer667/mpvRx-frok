@@ -272,9 +272,10 @@ fun Modifier.cardAccentDecoration(
             size = Size(size.width, 5.dp.toPx()),
           )
         }
+      }
+      else -> this
     }
   }
-}
 
 /**
  * Live preview card used in Settings.
