@@ -2416,7 +2416,7 @@ internal fun userScriptsNeedReload(currentKey: String): Boolean {
       }
       // A preference update can race with a shader install. Enforce the composition boundary
       // under the same native lock, rather than trusting a blend value calculated before it.
-      val spatialFilter = if (property == "af") desiredSpatialFilterLocked() else null
+      val spatialFilter = if (property == "af") SPATIAL_AUDIO_FILTER.takeIf { shouldApplySpatialAudioLocked() } else null
       val spatialLabel = spatialFilter?.substringBefore(':')
       val valueWithSpatial = when {
         property == "blend-subtitles" && isAmbientShaderActive -> "no"
