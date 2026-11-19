@@ -31,6 +31,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -199,6 +200,78 @@ fun Modifier.cardAccentStyle(
       this
         .clip(shape)
         .background(color = darkBase, shape = shape)
+    }
+  }
+}
+
+/**
+ * Draws card accent decoration without painting an opaque card background.
+ * Intended for overlay layers above selection backgrounds and below card content.
+ */
+fun Modifier.cardAccentDecoration(
+  style: CardAccentStyle,
+  opacity: Float = 1f,
+  accentWidth: Dp = 7.dp,
+  shape: Shape = RoundedCornerShape(16.dp),
+): Modifier {
+  val (startColor, endColor) = styleColors(style)
+  val safeOpacity = opacity.coerceIn(0.35f, 1f)
+
+  return when (style) {
+    in CardAccentStyle.folderStyles() -> {
+      this
+        .clip(shape)
+        .drawBehind {
+          val widthPx = accentWidth.toPx()
+          drawRect(
+            brush = Brush.verticalGradient(
+              colors = listOf(
+                startColor.copy(alpha = safeOpacity),
+                endColor.copy(alpha = safeOpacity),
+              ),
+            ),
+            topLeft = Offset.Zero,
+            size = Size(widthPx, size.height),
+          )
+        }
+    }
+
+    CardAccentStyle.VIDEO_SOFT_BORDER,
+    CardAccentStyle.VIDEO_GLOW_EDGE,
+    CardAccentStyle.VIDEO_MINIMAL,
+    CardAccentStyle.VIDEO_DOUBLE_EDGE -> {
+      val width = when (style) {
+        CardAccentStyle.VIDEO_SOFT_BORDER -> 1.8.dp
+        CardAccentStyle.VIDEO_GLOW_EDGE -> 2.2.dp
+        CardAccentStyle.VIDEO_MINIMAL -> 1.4.dp
+        else -> 2.5.dp
+      }
+      val brush =
+        if (style == CardAccentStyle.VIDEO_MINIMAL) {
+          SolidColor(startColor.copy(alpha = safeOpacity * 0.7f))
+        } else {
+          Brush.linearGradient(
+            listOf(startColor.copy(alpha = safeOpacity), endColor.copy(alpha = safeOpacity)),
+          )
+        }
+      this.clip(shape).border(width = width, brush = brush, shape = shape)
+    }
+
+    CardAccentStyle.VIDEO_ACCENT_TOP -> {
+      this
+        .clip(shape)
+        .drawBehind {
+          drawRect(
+            brush = Brush.horizontalGradient(
+              colors = listOf(
+                startColor.copy(alpha = safeOpacity),
+                endColor.copy(alpha = safeOpacity),
+              ),
+            ),
+            topLeft = Offset.Zero,
+            size = Size(size.width, 5.dp.toPx()),
+          )
+        }
     }
   }
 }

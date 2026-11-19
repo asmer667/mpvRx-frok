@@ -10,7 +10,6 @@
 package app.gyrolet.mpvrx.ui.browser.cards
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,15 +54,15 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import app.gyrolet.mpvrx.R
+import app.gyrolet.mpvrx.domain.archive.ZipArchiveMedia
 import app.gyrolet.mpvrx.domain.media.model.VideoFolder
 import app.gyrolet.mpvrx.domain.thumbnail.ThumbnailRepository
+import app.gyrolet.mpvrx.presentation.components.cardAccentDecoration
 import app.gyrolet.mpvrx.preferences.AppearancePreferences
 import app.gyrolet.mpvrx.preferences.BrowserPageViewPreferences
 import app.gyrolet.mpvrx.preferences.BrowserPreferences
 import app.gyrolet.mpvrx.preferences.VideoSwipeAction
 import app.gyrolet.mpvrx.preferences.preference.collectAsState
-import app.gyrolet.mpvrx.presentation.components.CardAccentStyle
-import app.gyrolet.mpvrx.presentation.components.cardAccentStyle
 import app.gyrolet.mpvrx.ui.icons.AppIcon
 import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
@@ -78,7 +77,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
-import kotlin.math.pow
 
 @androidx.compose.runtime.Immutable
 data class FolderCardUiConfig(
@@ -95,6 +93,8 @@ data class FolderCardUiConfig(
   val swipeLeft: VideoSwipeAction = VideoSwipeAction.AddToPlaylist,
   val swipeRight: VideoSwipeAction = VideoSwipeAction.ToggleWatched,
   val thumbnailGenerator: app.gyrolet.mpvrx.preferences.ThumbnailGenerator = app.gyrolet.mpvrx.preferences.ThumbnailGenerator.Auto,
+  val cardAccentStyleId: Int = 1,
+  val cardAccentOpacity: Float = 1f,
 )
 
 /** Hoist this once per screen and pass the result to every card rather than collecting per item. */
@@ -116,6 +116,8 @@ fun rememberFolderCardUiConfig(viewPreferences: BrowserPageViewPreferences? = nu
   val includeAudio by browserPreferences.includeAudioBrowser.collectAsState()
   val swipeLeft by browserPreferences.videoSwipeLeft.collectAsState()
   val swipeRight by browserPreferences.videoSwipeRight.collectAsState()
+  val cardAccentStyleId by appearancePreferences.folderCardStyle.collectAsState()
+  val cardAccentOpacity by appearancePreferences.cardAccentOpacity.collectAsState()
 
   return remember(
     unlimitedNameLines,
@@ -131,6 +133,8 @@ fun rememberFolderCardUiConfig(viewPreferences: BrowserPageViewPreferences? = nu
     includeAudio,
     swipeLeft,
     swipeRight,
+    cardAccentStyleId,
+    cardAccentOpacity,
   ) {
     FolderCardUiConfig(
       unlimitedNameLines = unlimitedNameLines,
@@ -146,6 +150,8 @@ fun rememberFolderCardUiConfig(viewPreferences: BrowserPageViewPreferences? = nu
       includeAudio = includeAudio,
       swipeLeft = swipeLeft,
       swipeRight = swipeRight,
+      cardAccentStyleId = cardAccentStyleId,
+      cardAccentOpacity = cardAccentOpacity,
     )
   }
 }
@@ -177,6 +183,7 @@ fun FolderCard(
   viewPreferences: BrowserPageViewPreferences? = null,
   uiConfig: FolderCardUiConfig? = null,
   allowThumbnailGeneration: Boolean = true,
+  listThumbnailSize: Dp = 72.dp,
   selectionNeighbors: MediaSelectionNeighbors = MediaSelectionNeighbors(),
 ) {
   val resolvedUiConfig = uiConfig ?: rememberFolderCardUiConfig(viewPreferences)
@@ -193,13 +200,8 @@ fun FolderCard(
   val includeAudio = resolvedUiConfig.includeAudio
   val swipeLeft = resolvedUiConfig.swipeLeft
   val swipeRight = resolvedUiConfig.swipeRight
-
-  // Card accent style (left strip)
-  val appearancePreferences = koinInject<AppearancePreferences>()
-  val folderStyleId by appearancePreferences.folderCardStyle.collectAsState()
-  val cardOpacity by appearancePreferences.cardAccentOpacity.collectAsState()
-  val folderAccentStyle = CardAccentStyle.fromId(folderStyleId)
-
+  val cardAccentStyle = app.gyrolet.mpvrx.presentation.components.CardAccentStyle.fromId(resolvedUiConfig.cardAccentStyleId)
+  val cardAccentOpacity = resolvedUiConfig.cardAccentOpacity
   val context = androidx.compose.ui.platform.LocalContext.current
   val thumbnailRepository = koinInject<ThumbnailRepository>()
   val thumbnailCacheRevision by thumbnailRepository.cacheRevision.collectAsState()
@@ -231,8 +233,12 @@ fun FolderCard(
           return@withContext
         }
         val videos =
-          app.gyrolet.mpvrx.repository.MediaFileRepository
-            .getVideosInFolder(context, folder.bucketId)
+          if (ZipArchiveMedia.isBrowserPath(folder.bucketId)) {
+            ZipArchiveMedia.allMedia(context, folder.bucketId, includeAudio).getOrDefault(emptyList())
+          } else {
+            app.gyrolet.mpvrx.repository.MediaFileRepository
+              .getVideosInFolder(context, folder.bucketId)
+          }
         if (videos.isNotEmpty()) {
           // On narrow cells keep one full cover instead of an unreadable 4-tile preview.
           val preview = videos.take(if (showPreviewCollage) 4 else 1)
@@ -274,7 +280,7 @@ fun FolderCard(
   fun PinnedFolderBadge(modifier: Modifier = Modifier) {
     Surface(
       shape = AppShapeScale.full,
-      color = MaterialTheme.colorScheme.primary.copy(alpha = 0.94f),
+      color = MaterialTheme.colorScheme.primary,
       contentColor = MaterialTheme.colorScheme.onPrimary,
       shadowElevation = 3.dp,
       modifier = modifier.rotate(-18f),
@@ -327,23 +333,22 @@ fun FolderCard(
     // Size the actual Card content, not just the swipe wrapper's outer box; otherwise
     // the selected tonal background stops above a taller neighbor in the same row.
     Box(modifier = if (isGridMode) Modifier.fillMaxWidth().heightIn(min = gridRowMinHeight) else Modifier.fillMaxWidth()) {
-      // Base accent style (left strip). Selection color is drawn on top when selected.
       Box(
         modifier =
           Modifier
             .matchParentSize()
-            .cardAccentStyle(
-              style = folderAccentStyle,
-              opacity = cardOpacity,
-              accentWidth = 7.dp,
-              cornerRadius = 16.dp,
-            )
-            .then(
-              if (isSelected || selectionContainerColor.alpha > 0.01f) {
-                Modifier.background(selectionContainerColor)
-              } else {
-                Modifier
-              },
+            .clip(cardShape)
+            .background(selectionContainerColor),
+      )
+
+      Box(
+        modifier =
+          Modifier
+            .matchParentSize()
+            .cardAccentDecoration(
+              style = cardAccentStyle,
+              opacity = cardAccentOpacity,
+              shape = cardShape,
             ),
       )
 
@@ -376,14 +381,25 @@ fun FolderCard(
           ) {
             val folderImageBitmap = remember(folderThumbnail) { folderThumbnail?.asImageBitmap() }
             val resolvedThumbnail = thumbnail ?: folderImageBitmap.takeIf { showFolderThumbnails }
-            if (thumbnail == null && showFolderThumbnails && folderPreviewFrames.size > 1 &&
-              folderPreviewFrames.any { it != null }) {
-              FolderPreviewMosaic(folderPreviewFrames, Modifier.matchParentSize().clip(AppShapeScale.medium))
+            val showMosaic = thumbnail == null && showFolderThumbnails && folderPreviewFrames.size > 1 &&
+              folderPreviewFrames.any { it != null }
+            val previewReveal =
+              rememberThumbnailReveal(
+                showMosaic || resolvedThumbnail != null,
+                folder.bucketId,
+                thumbnailGenerator,
+                thumbnailCacheRevision,
+              )
+            if (showMosaic) {
+              FolderPreviewMosaic(
+                folderPreviewFrames,
+                Modifier.matchParentSize().clip(AppShapeScale.medium).thumbnailReveal(previewReveal),
+              )
             } else if (resolvedThumbnail != null) {
               androidx.compose.foundation.Image(
                 bitmap = resolvedThumbnail,
                 contentDescription = null,
-                modifier = Modifier.matchParentSize().clip(AppShapeScale.medium),
+                modifier = Modifier.matchParentSize().clip(AppShapeScale.medium).thumbnailReveal(previewReveal),
                 contentScale = ContentScale.Crop,
               )
             } else {
@@ -503,7 +519,7 @@ fun FolderCard(
           Box(
             modifier =
               Modifier
-                .size(72.dp)
+                .size(listThumbnailSize)
                 .tvFocusHighlight(AppShapeScale.medium, focusedScale = 1.03f)
                 .mediaCardClickable(
                   onClick = onThumbClick,
@@ -692,13 +708,8 @@ private fun formatDuration(durationMs: Long): String {
   }
 }
 
-private fun formatFileSize(bytes: Long): String {
-  if (bytes <= 0) return "0 B"
-  val units = arrayOf("B", "KB", "MB", "GB", "TB")
-  val digitGroups = (kotlin.math.log10(bytes.toDouble()) / kotlin.math.log10(1024.0)).toInt()
-  val value = bytes / 1024.0.pow(digitGroups.toDouble())
-  return String.format(java.util.Locale.getDefault(), "%.1f %s", value, units[digitGroups])
-}
+private fun formatFileSize(bytes: Long): String =
+  app.gyrolet.mpvrx.utils.storage.VideoScanUtils.formatFileSize(bytes)
 
 // Hoisted because a card formats a date on every recomposition and SimpleDateFormat construction
 // parses the pattern and clones a Calendar each time.

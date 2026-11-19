@@ -1,6 +1,3 @@
-package app.gyrolet.mpvrx.ui.preferences
-
-import androidx.compose.runtime.*
 /*
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
@@ -10,7 +7,7 @@ import androidx.compose.runtime.*
  * (at your option) any later version.
  */
 
-
+package app.gyrolet.mpvrx.ui.preferences
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.animateColorAsState

@@ -10,7 +10,8 @@
 package app.gyrolet.mpvrx.ui.preferences
 
 import android.app.Activity
-import android.widget.Toast
+import app.gyrolet.mpvrx.ui.components.AppToast as Toast
+import app.gyrolet.mpvrx.ui.components.AppToastType
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -54,13 +55,13 @@ import app.gyrolet.mpvrx.preferences.ThumbnailMode
 import app.gyrolet.mpvrx.preferences.ThumbnailQuality
 import app.gyrolet.mpvrx.preferences.TreeFlattenDepth
 import app.gyrolet.mpvrx.preferences.preference.collectAsState
-import app.gyrolet.mpvrx.presentation.Screen
 import app.gyrolet.mpvrx.presentation.components.ConfirmDialog
 import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
 import app.gyrolet.mpvrx.ui.player.ControlsAnimationStyle
 import app.gyrolet.mpvrx.ui.player.NavigationAnimStyle
 import app.gyrolet.mpvrx.ui.player.VideoOpenAnimation
+import app.gyrolet.mpvrx.ui.preferences.CardAccentPreferencesScreen
 import app.gyrolet.mpvrx.ui.preferences.components.SwitchPreference
 import app.gyrolet.mpvrx.ui.preferences.components.RestartRequiredDialog
 import app.gyrolet.mpvrx.ui.preferences.components.ThemePicker
@@ -82,13 +83,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import app.gyrolet.mpvrx.ui.preferences.components.AppListPreference as ListPreference
-import me.zhanghai.compose.preference.Preference
+import app.gyrolet.mpvrx.ui.preferences.components.PreferenceAction
+import app.gyrolet.mpvrx.ui.preferences.components.AppPreference as Preference
 import app.gyrolet.mpvrx.ui.preferences.components.AppSliderPreference as SliderPreference
 import org.koin.compose.koinInject
 import kotlin.math.roundToInt
 
 @Serializable
-object AppearancePreferencesScreen : Screen {
+object AppearancePreferencesScreen : ScrollableSettingsScreen {
   @OptIn(ExperimentalMaterial3Api::class)
   @Composable
   override fun Content() {
@@ -242,6 +244,7 @@ object AppearancePreferencesScreen : Screen {
           rememberSettingsSearchList(AppearancePreferencesScreen, MaterialTheme.colorScheme.primary)
         LazyColumn(
           state = settingsListState,
+          contentPadding = settingsContentPadding(),
           modifier =
             Modifier
               .fillMaxSize()
@@ -326,6 +329,7 @@ object AppearancePreferencesScreen : Screen {
                     customThemes = pickerThemes,
                     selectedCustomThemeName = selectedCustomThemeName,
                     isDarkMode = isDarkMode,
+                    amoledMode = amoledMode,
                     onThemeSelected = { theme, position ->
                       if ((theme != appTheme || selectedCustomThemeName.isNotBlank()) && themeTransition?.isAnimating != true) {
                         themeTransition?.startTransition(position)
@@ -450,6 +454,7 @@ object AppearancePreferencesScreen : Screen {
                       )
                     },
                     onClick = { isAppFontSheetOpen = true },
+                    action = PreferenceAction.Dialog,
                   )
                   }
 
@@ -494,30 +499,7 @@ object AppearancePreferencesScreen : Screen {
 
           item {
             ExpressivePreferenceGroup {
-              val itemCount = 7
-              val unlimitedNameLines by preferences.unlimitedNameLines.collectAsState()
-              SwitchPreference(
-                modifier = Modifier.settingsSearchTarget(R.string.pref_appearance_unlimited_name_lines_title),
-                value = unlimitedNameLines,
-                onValueChange = { preferences.unlimitedNameLines.set(it) },
-                title = {
-                  Text(
-                    text = stringResource(id = R.string.pref_appearance_unlimited_name_lines_title),
-                  )
-                },
-                summary = {
-                  Text(
-                    text =
-                      stringResource(
-                        id = R.string.pref_appearance_unlimited_name_lines_summary,
-                      ),
-                    color = MaterialTheme.colorScheme.outline,
-                  )
-                },
-                groupIndex = 0,
-                groupSize = itemCount,
-              )
-
+              val itemCount = 6
               val showUnplayedOldVideoLabel by preferences.showUnplayedOldVideoLabel.collectAsState()
               SwitchPreference(
                 modifier = Modifier.settingsSearchTarget(R.string.pref_appearance_show_unplayed_old_video_label_title),
@@ -540,12 +522,12 @@ object AppearancePreferencesScreen : Screen {
                     color = MaterialTheme.colorScheme.outline,
                   )
                 },
-                groupIndex = 1,
+                groupIndex = 0,
                 groupSize = itemCount,
               )
 
               val unplayedOldVideoDays by preferences.unplayedOldVideoDays.collectAsState()
-              ExpressivePreferenceTile(index = 2, itemCount = itemCount) {
+              ExpressivePreferenceTile(index = 1, itemCount = itemCount) {
                 SliderPreference(
                   modifier = Modifier.settingsSearchTarget(R.string.pref_appearance_unplayed_old_video_days_title),
                   value = unplayedOldVideoDays.toFloat(),
@@ -591,11 +573,11 @@ object AppearancePreferencesScreen : Screen {
                     color = MaterialTheme.colorScheme.outline,
                   )
                 },
-                groupIndex = 3,
+                groupIndex = 2,
                 groupSize = itemCount,
               )
 
-              ExpressivePreferenceTile(index = 4, itemCount = itemCount) {
+              ExpressivePreferenceTile(index = 3, itemCount = itemCount) {
                 ListPreference(
                   modifier = Modifier.settingsSearchTarget(R.string.pref_tree_flatten_depth_title),
                   value = treeFlattenDepth,
@@ -636,7 +618,7 @@ object AppearancePreferencesScreen : Screen {
                     color = MaterialTheme.colorScheme.outline,
                   )
                 },
-                groupIndex = 5,
+                groupIndex = 4,
                 groupSize = itemCount,
               )
 
@@ -663,9 +645,33 @@ object AppearancePreferencesScreen : Screen {
                     color = MaterialTheme.colorScheme.outline,
                   )
                 },
-                groupIndex = 6,
+                groupIndex = 5,
                 groupSize = itemCount,
               )
+            }
+          }
+
+          item {
+            PreferenceSectionHeader(
+              position = PreferenceSectionPosition.Middle,
+              title = stringResource(R.string.pref_appearance_category_card_customization),
+            )
+          }
+
+          item {
+            ExpressivePreferenceGroup {
+              ExpressivePreferenceItem {
+                Preference(
+                  title = { Text(stringResource(R.string.pref_card_customization_title)) },
+                  summary = {
+                    Text(
+                      stringResource(R.string.pref_card_customization_summary),
+                      color = MaterialTheme.colorScheme.outline,
+                    )
+                  },
+                  onClick = { backstack.navigateTo(CardAccentPreferencesScreen) },
+                )
+              }
             }
           }
 
@@ -709,16 +715,18 @@ object AppearancePreferencesScreen : Screen {
                   onValueChange = { selected ->
                     if (!changingThumbnailGenerator && selected != thumbnailGenerator) {
                       changingThumbnailGenerator = true
+                      val progressToast = Toast.loading(context, context.getString(R.string.toast_updating_thumbnail_generator))
                       scope.launch {
                         try {
                           thumbnailRepository.setThumbnailGenerator(selected)
                           app.gyrolet.mpvrx.ui.player.MediaPlayerWidget.clearArtworkCache()
                           app.gyrolet.mpvrx.ui.player.MediaPlayerWidget.requestUpdate(context)
-                          Toast.makeText(context, thumbnailCacheClearedMessage, Toast.LENGTH_SHORT).show()
+                          progressToast.update(thumbnailCacheClearedMessage, AppToastType.Success)
                         } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                          progressToast.cancel()
                           throw cancelled
                         } catch (error: Exception) {
-                          Toast.makeText(context, context.getString(R.string.pref_thumbnail_cache_clear_failed, error.message ?: "Unknown error"), Toast.LENGTH_LONG).show()
+                          progressToast.update(context.getString(R.string.pref_thumbnail_cache_clear_failed, error.message ?: "Unknown error"), AppToastType.Error)
                         } finally {
                           changingThumbnailGenerator = false
                         }
@@ -838,6 +846,7 @@ object AppearancePreferencesScreen : Screen {
                     )
                   },
                   onClick = { isThumbnailParallelismDialogOpen = true },
+                  action = PreferenceAction.Dialog,
                   enabled = showVideoThumbnails,
                 )
               }
@@ -952,26 +961,29 @@ object AppearancePreferencesScreen : Screen {
                 else -> ReorderableTabItem(id, stringResource(R.string.pref_nav_profile_title), stringResource(R.string.pref_nav_profile_summary), showProfileTab, titleRes = R.string.pref_nav_profile_title)
               }
             }
-            ExpressivePreferenceGroup {
-              ReorderableTabPreferences(
-                tabs = tabItems,
-                onEnabledChange = { id, enabled ->
-                  when (id) {
-                    "MUSIC" -> preferences.showMusicTab.set(enabled)
-                    "NETWORK" -> preferences.showNetworkTab.set(enabled)
-                    "JELLYFIN" -> preferences.showJellyfinTab.set(enabled)
-                    "PROFILE" -> preferences.showProfileTab.set(enabled)
-                  }
-                },
-                onMove = { id, destination ->
-                  if (id != "HOME") {
-                    val current = ordered.toMutableList()
-                    current.remove(id)
-                    current.add(destination.coerceIn(1, current.size), id)
-                    preferences.bottomNavigationOrder.set(current)
-                  }
-                },
-              )
+            Column(modifier = Modifier.fillMaxWidth()) {
+              ExpressivePreferenceGroup {
+                ReorderableTabPreferences(
+                  tabs = tabItems,
+                  onEnabledChange = { id, enabled ->
+                    when (id) {
+                      "MUSIC" -> preferences.showMusicTab.set(enabled)
+                      "NETWORK" -> preferences.showNetworkTab.set(enabled)
+                      "JELLYFIN" -> preferences.showJellyfinTab.set(enabled)
+                      "PROFILE" -> preferences.showProfileTab.set(enabled)
+                    }
+                  },
+                  onMove = { id, destination ->
+                    if (id != "HOME") {
+                      val current = ordered.toMutableList()
+                      current.remove(id)
+                      current.add(destination.coerceIn(1, current.size), id)
+                      preferences.bottomNavigationOrder.set(current)
+                    }
+                  },
+                )
+              }
+              ProfileLayoutPreferences(preferences)
             }
           }
 
@@ -998,7 +1010,7 @@ object AppearancePreferencesScreen : Screen {
                     )
                   },
                   groupIndex = 0,
-                  groupSize = 5,
+                  groupSize = 6,
                 )
                 val quickPlayFabDirect by preferences.quickPlayFabDirect.collectAsState()
                 SwitchPreference(
@@ -1014,7 +1026,7 @@ object AppearancePreferencesScreen : Screen {
                     )
                   },
                   groupIndex = 1,
-                  groupSize = 5,
+                  groupSize = 6,
                 )
                 val navigationBarGlow by preferences.navigationBarGlow.collectAsState()
                 SwitchPreference(
@@ -1024,7 +1036,7 @@ object AppearancePreferencesScreen : Screen {
                   title = { Text(stringResource(R.string.navbar_glow_title)) },
                   summary = { Text(stringResource(R.string.navbar_glow_summary), color = MaterialTheme.colorScheme.outline) },
                   groupIndex = 2,
-                  groupSize = 5,
+                  groupSize = 6,
                 )
                 val legacyNavigationBar by preferences.legacyNavigationBar.collectAsState()
                 val progressiveNavigationBlur by preferences.progressiveNavigationBlur.collectAsState()
@@ -1043,7 +1055,7 @@ object AppearancePreferencesScreen : Screen {
                   title = { Text(stringResource(R.string.legacy_navigation_bar_title)) },
                   summary = { Text(stringResource(R.string.legacy_navigation_bar_summary), color = MaterialTheme.colorScheme.outline) },
                   groupIndex = 3,
-                  groupSize = 5,
+                  groupSize = 6,
                 )
                 SwitchPreference(
                   modifier = Modifier.settingsSearchTarget(R.string.progressive_navigation_blur_title),
@@ -1053,7 +1065,41 @@ object AppearancePreferencesScreen : Screen {
                   title = { Text(stringResource(R.string.progressive_navigation_blur_title)) },
                   summary = { Text(stringResource(R.string.progressive_navigation_blur_summary), color = MaterialTheme.colorScheme.outline) },
                   groupIndex = 4,
-                  groupSize = 5,
+                  groupSize = 6,
+                )
+                val connectedMiniPlayerNavigation by preferences.connectedMiniPlayerNavigation.collectAsState()
+                SwitchPreference(
+                  modifier = Modifier.settingsSearchTarget(R.string.connected_mini_player_navigation_title),
+                  value = connectedMiniPlayerNavigation && !legacyNavigationBar,
+                  onValueChange = preferences.connectedMiniPlayerNavigation::set,
+                  enabled = !legacyNavigationBar,
+                  title = { Text(stringResource(R.string.connected_mini_player_navigation_title)) },
+                  summary = { Text(stringResource(R.string.connected_mini_player_navigation_summary), color = MaterialTheme.colorScheme.outline) },
+                  groupIndex = 5,
+                  groupSize = 6,
+                )
+              }
+            }
+          } else {
+            // Same item count as the phone block above, so later search anchors still line up.
+            item {
+              PreferenceSectionHeader(
+                position = PreferenceSectionPosition.Middle,
+                title = stringResource(R.string.pref_nav_actions_section),
+              )
+            }
+
+            item {
+              ExpressivePreferenceGroup {
+                val confirmBackToExit by gesturePreferences.confirmBackToExit.collectAsState()
+                SwitchPreference(
+                  modifier = Modifier.settingsSearchTarget(R.string.pref_tv_double_back_exit_title),
+                  value = confirmBackToExit,
+                  onValueChange = gesturePreferences.confirmBackToExit::set,
+                  title = { Text(stringResource(R.string.pref_tv_double_back_exit_title)) },
+                  summary = { Text(stringResource(R.string.pref_tv_double_back_exit_summary), color = MaterialTheme.colorScheme.outline) },
+                  groupIndex = 0,
+                  groupSize = 1,
                 )
               }
             }
