@@ -751,8 +751,16 @@ private fun RecentItemsContent(
   val aspect = if (isAudioTab) 1f else if (isGridMode) 16f / 10f else 16f / 9f
   val thumbWidthPx = with(density) { thumbWidthDp.roundToPx() }
   val thumbHeightPx = (thumbWidthPx / aspect).toInt()
+  val videoCardStyle by appearancePreferences.videoCardStyle.collectAsState()
+  val cardAccentOpacity by appearancePreferences.videoCardOpacity.collectAsState()
+  val episodeCardStyle by appearancePreferences.episodeCardStyle.collectAsState()
+  val episodeCardOpacity by appearancePreferences.episodeCardOpacity.collectAsState()
   val videoCardUiConfig =
     remember(
+      videoCardStyle,
+      cardAccentOpacity,
+      episodeCardStyle,
+      episodeCardOpacity,
       unlimitedNameLines,
       showVideoThumbnails,
       showSizeChip,
@@ -773,6 +781,10 @@ private fun RecentItemsContent(
       swipeRight,
     ) {
       VideoCardUiConfig(
+        cardAccentStyleId = videoCardStyle,
+        cardAccentOpacity = cardAccentOpacity,
+        episodeCardStyleId = episodeCardStyle,
+        episodeCardOpacity = episodeCardOpacity,
         unlimitedNameLines = unlimitedNameLines,
         showThumbnails = showVideoThumbnails,
         showSizeChip = showSizeChip,

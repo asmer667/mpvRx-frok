@@ -117,7 +117,7 @@ fun rememberFolderCardUiConfig(viewPreferences: BrowserPageViewPreferences? = nu
   val swipeLeft by browserPreferences.videoSwipeLeft.collectAsState()
   val swipeRight by browserPreferences.videoSwipeRight.collectAsState()
   val cardAccentStyleId by appearancePreferences.folderCardStyle.collectAsState()
-  val cardAccentOpacity by appearancePreferences.cardAccentOpacity.collectAsState()
+  val cardAccentOpacity by appearancePreferences.folderCardOpacity.collectAsState()
 
   return remember(
     unlimitedNameLines,

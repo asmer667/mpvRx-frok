@@ -877,8 +877,18 @@ internal fun VideoListContent(
   val videoGridColumnsDualPaneLandscape by browserPreferences.videoGridColumnsDualPaneLandscape.collectAsState()
   val aspect = if (isAudio) 1f else if (mediaLayoutMode == MediaLayoutMode.GRID) 16f / 10f else 16f / 9f
 
+  val videoCardStyle by appearancePreferences.videoCardStyle.collectAsState()
+
+  val cardAccentOpacity by appearancePreferences.videoCardOpacity.collectAsState()
+  val episodeCardStyle by appearancePreferences.episodeCardStyle.collectAsState()
+  val episodeCardOpacity by appearancePreferences.episodeCardOpacity.collectAsState()
+
   val videoCardUiConfig =
     remember(
+      videoCardStyle,
+      cardAccentOpacity,
+      episodeCardStyle,
+      episodeCardOpacity,
       unlimitedNameLines,
       showVideoThumbnails,
       showSizeChip,
@@ -899,6 +909,10 @@ internal fun VideoListContent(
       swipeRight,
     ) {
       VideoCardUiConfig(
+        cardAccentStyleId = videoCardStyle,
+        cardAccentOpacity = cardAccentOpacity,
+        episodeCardStyleId = episodeCardStyle,
+        episodeCardOpacity = episodeCardOpacity,
         unlimitedNameLines = unlimitedNameLines,
         showThumbnails = showVideoThumbnails,
         showSizeChip = showSizeChip,

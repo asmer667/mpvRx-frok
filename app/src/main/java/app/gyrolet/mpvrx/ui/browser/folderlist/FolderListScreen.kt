@@ -1843,8 +1843,16 @@ private fun SearchResultsContent(
   val thumbnailGenerator by browserPreferences.thumbnailGenerator.collectAsState()
   val swipeLeft by browserPreferences.videoSwipeLeft.collectAsState()
   val swipeRight by browserPreferences.videoSwipeRight.collectAsState()
+  val videoCardStyle by appearancePreferences.videoCardStyle.collectAsState()
+  val cardAccentOpacity by appearancePreferences.videoCardOpacity.collectAsState()
+  val episodeCardStyle by appearancePreferences.episodeCardStyle.collectAsState()
+  val episodeCardOpacity by appearancePreferences.episodeCardOpacity.collectAsState()
   val videoCardUiConfig =
     remember(
+      videoCardStyle,
+      cardAccentOpacity,
+      episodeCardStyle,
+      episodeCardOpacity,
       unlimitedNameLines,
       showVideoThumbnails,
       showSizeChip,
@@ -1865,6 +1873,10 @@ private fun SearchResultsContent(
       swipeRight,
     ) {
       VideoCardUiConfig(
+        cardAccentStyleId = videoCardStyle,
+        cardAccentOpacity = cardAccentOpacity,
+        episodeCardStyleId = episodeCardStyle,
+        episodeCardOpacity = episodeCardOpacity,
         unlimitedNameLines = unlimitedNameLines,
         showThumbnails = showVideoThumbnails,
         showSizeChip = showSizeChip,

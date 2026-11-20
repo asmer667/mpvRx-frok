@@ -80,7 +80,22 @@ class AppearancePreferences(
   val amoledMode = preferenceStore.getBoolean("amoled_mode", false)
   val folderCardStyle = preferenceStore.getInt("folder_card_style", 1)
   val videoCardStyle = preferenceStore.getInt("video_card_style", 11)
+  val episodeCardStyle = preferenceStore.getInt("episode_card_style", 61)
+
+  // Preserve the legacy shared opacity for users upgrading from older versions.
   val cardAccentOpacity = preferenceStore.getFloat("card_accent_opacity", 1f)
+  val folderCardOpacity = preferenceStore.getFloat(
+    "folder_card_opacity",
+    cardAccentOpacity.get(),
+  )
+  val videoCardOpacity = preferenceStore.getFloat(
+    "video_card_opacity",
+    cardAccentOpacity.get(),
+  )
+  val episodeCardOpacity = preferenceStore.getFloat(
+    "episode_card_opacity",
+    cardAccentOpacity.get(),
+  )
   // Opt-in: glass records the screen behind it every frame and moves player video to a TextureView.
   val liquidGlassEnabled = preferenceStore.getBoolean("liquid_glass_enabled", false)
   val liquidGlassInHdr = preferenceStore.getBoolean("liquid_glass_in_hdr", false)

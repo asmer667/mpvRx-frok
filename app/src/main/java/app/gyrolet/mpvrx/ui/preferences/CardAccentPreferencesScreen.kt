@@ -59,20 +59,41 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
 
     val savedFolderStyle by preferences.folderCardStyle.collectAsState()
     val savedVideoStyle by preferences.videoCardStyle.collectAsState()
-    val savedOpacity by preferences.cardAccentOpacity.collectAsState()
+    val savedEpisodeStyle by preferences.episodeCardStyle.collectAsState()
+    val savedFolderOpacity by preferences.folderCardOpacity.collectAsState()
+    val savedVideoOpacity by preferences.videoCardOpacity.collectAsState()
+    val savedEpisodeOpacity by preferences.episodeCardOpacity.collectAsState()
 
     var folderStyleId by rememberSaveable { mutableStateOf(savedFolderStyle) }
     var videoStyleId by rememberSaveable { mutableStateOf(savedVideoStyle) }
-    var opacity by rememberSaveable { mutableStateOf(savedOpacity.coerceIn(0.35f, 1f)) }
-    var showingFolders by rememberSaveable { mutableStateOf(true) }
+    var episodeStyleId by rememberSaveable { mutableStateOf(savedEpisodeStyle) }
+    var folderOpacity by rememberSaveable {
+      mutableStateOf(savedFolderOpacity.coerceIn(0.35f, 1f))
+    }
+    var videoOpacity by rememberSaveable {
+      mutableStateOf(savedVideoOpacity.coerceIn(0.35f, 1f))
+    }
+    var episodeOpacity by rememberSaveable {
+      mutableStateOf(savedEpisodeOpacity.coerceIn(0.35f, 1f))
+    }
+    var selectedType by rememberSaveable { mutableStateOf(0) }
 
+    val opacity = when (selectedType) {
+      0 -> folderOpacity
+      1 -> videoOpacity
+      else -> episodeOpacity
+    }
     val selectedStyle = CardAccentStyle.fromId(
-      if (showingFolders) folderStyleId else videoStyleId,
+      when (selectedType) {
+        0 -> folderStyleId
+        1 -> videoStyleId
+        else -> episodeStyleId
+      },
     )
-    val styles = if (showingFolders) {
-      CardAccentStyle.folderStyles()
-    } else {
-      CardAccentStyle.videoStyles()
+    val styles = when (selectedType) {
+      0 -> CardAccentStyle.folderStyles()
+      1 -> CardAccentStyle.videoStyles()
+      else -> CardAccentStyle.episodeStyles()
     }
 
     Scaffold(
@@ -107,7 +128,8 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
             CardAccentPreviewCard(
               style = selectedStyle,
               opacity = opacity,
-              isFolder = showingFolders,
+              isFolder = selectedType == 0,
+              isEpisode = selectedType == 2,
             )
 
             Row(
@@ -116,15 +138,21 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
             ) {
               AccentTypeTab(
                 text = stringResource(R.string.pref_card_customization_folders),
-                selected = showingFolders,
+                selected = selectedType == 0,
                 modifier = Modifier.weight(1f),
-                onClick = { showingFolders = true },
+                onClick = { selectedType = 0 },
               )
               AccentTypeTab(
                 text = stringResource(R.string.pref_card_customization_videos),
-                selected = !showingFolders,
+                selected = selectedType == 1,
                 modifier = Modifier.weight(1f),
-                onClick = { showingFolders = false },
+                onClick = { selectedType = 1 },
+              )
+              AccentTypeTab(
+                text = stringResource(R.string.pref_card_customization_episodes),
+                selected = selectedType == 2,
+                modifier = Modifier.weight(1f),
+                onClick = { selectedType = 2 },
               )
             }
 
@@ -146,8 +174,11 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
                       selected = selectedStyle == style,
                       modifier = Modifier.weight(1f),
                       onClick = {
-                        if (showingFolders) folderStyleId = style.id
-                        else videoStyleId = style.id
+                        when (selectedType) {
+                          0 -> folderStyleId = style.id
+                          1 -> videoStyleId = style.id
+                          else -> episodeStyleId = style.id
+                        }
                       },
                     )
                   }
@@ -161,7 +192,13 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
               verticalAlignment = Alignment.CenterVertically,
             ) {
               Text(
-                stringResource(R.string.pref_card_customization_opacity),
+                stringResource(
+                  when (selectedType) {
+                    0 -> R.string.card_folder_opacity
+                    1 -> R.string.card_video_opacity
+                    else -> R.string.card_episode_opacity
+                  },
+                ),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f),
@@ -175,9 +212,16 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
 
             Slider(
               value = opacity,
-              onValueChange = { opacity = it },
+              onValueChange = {
+                when (selectedType) {
+                  0 -> folderOpacity = it
+                  1 -> videoOpacity = it
+                  else -> episodeOpacity = it
+                }
+              },
               valueRange = 0.35f..1f,
             )
+
           }
 
           Row(
@@ -196,7 +240,10 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
               onClick = {
                 preferences.folderCardStyle.set(folderStyleId)
                 preferences.videoCardStyle.set(videoStyleId)
-                preferences.cardAccentOpacity.set(opacity)
+                preferences.episodeCardStyle.set(episodeStyleId)
+                preferences.folderCardOpacity.set(folderOpacity)
+                preferences.videoCardOpacity.set(videoOpacity)
+                preferences.episodeCardOpacity.set(episodeOpacity)
                 backstack.popSafely()
               },
               modifier = Modifier.weight(1f),
@@ -259,6 +306,36 @@ private fun AccentStyleChoice(
       modifier = Modifier.padding(horizontal = 10.dp, vertical = 12.dp),
       verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+      val previewShape = RoundedCornerShape(9.dp)
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(42.dp)
+          .clip(previewShape)
+          .background(MaterialTheme.colorScheme.surface)
+          .cardAccentDecoration(
+            style = style,
+            opacity = 0.95f,
+            shape = previewShape,
+          ),
+      ) {
+        Box(
+          modifier = Modifier
+            .align(Alignment.Center)
+            .fillMaxWidth(0.48f)
+            .height(5.dp)
+            .clip(RoundedCornerShape(5.dp))
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f)),
+        )
+        Box(
+          modifier = Modifier
+            .align(Alignment.CenterStart)
+            .padding(start = 10.dp)
+            .size(13.dp)
+            .clip(RoundedCornerShape(4.dp))
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.22f)),
+        )
+      }
       Text(
         if (arabic) style.displayNameAr else style.displayNameEn,
         style = MaterialTheme.typography.labelMedium,
@@ -282,6 +359,7 @@ private fun CardAccentPreviewCard(
   style: CardAccentStyle,
   opacity: Float,
   isFolder: Boolean,
+  isEpisode: Boolean,
 ) {
   val shape = RoundedCornerShape(18.dp)
   Surface(
@@ -339,6 +417,46 @@ private fun CardAccentPreviewCard(
               style = MaterialTheme.typography.bodySmall,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+          }
+        }
+      } else if (isEpisode) {
+        Row(
+          modifier = Modifier.fillMaxSize().padding(12.dp),
+          horizontalArrangement = Arrangement.spacedBy(12.dp),
+          verticalAlignment = Alignment.CenterVertically,
+        ) {
+          Box(
+            modifier = Modifier
+              .width(92.dp)
+              .height(164.dp)
+              .clip(RoundedCornerShape(12.dp))
+              .background(Brush.linearGradient(listOf(Color(0xFF172554), Color(0xFF7C2D92), Color(0xFFBE6B42)))),
+            contentAlignment = Alignment.Center,
+          ) {
+            Text("▶", color = Color.White, style = MaterialTheme.typography.headlineLarge)
+            Text(
+              "S01  •  E04",
+              modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp),
+              color = Color.White,
+              style = MaterialTheme.typography.labelSmall,
+            )
+          }
+          Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+          ) {
+            Text("ORIGINAL SERIES", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+            Text("The Last Journey", color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("الموسم الأول • الحلقة الرابعة", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            Text("★  8.9 / 10", color = Color(0xFFFFC857), style = MaterialTheme.typography.labelMedium)
+            Box(
+              modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(4.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
+            ) {
+              Box(
+                modifier = Modifier.fillMaxWidth(0.68f).height(4.dp).background(MaterialTheme.colorScheme.primary),
+              )
+            }
+            Text("متبقي 12 دقيقة", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
           }
         }
       } else {

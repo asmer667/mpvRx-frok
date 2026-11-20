@@ -99,6 +99,8 @@ data class VideoCardUiConfig(
   val thumbnailGenerator: app.gyrolet.mpvrx.preferences.ThumbnailGenerator = app.gyrolet.mpvrx.preferences.ThumbnailGenerator.Auto,
   val cardAccentStyleId: Int = 11,
   val cardAccentOpacity: Float = 1f,
+  val episodeCardStyleId: Int = 61,
+  val episodeCardOpacity: Float = 1f,
 )
 
 /** Hoist this once per screen and pass the result to every card rather than collecting per item. */
@@ -126,7 +128,9 @@ fun rememberVideoCardUiConfig(): VideoCardUiConfig {
   val swipeLeft by browserPreferences.videoSwipeLeft.collectAsState()
   val swipeRight by browserPreferences.videoSwipeRight.collectAsState()
   val cardAccentStyleId by appearancePreferences.videoCardStyle.collectAsState()
-  val cardAccentOpacity by appearancePreferences.cardAccentOpacity.collectAsState()
+  val cardAccentOpacity by appearancePreferences.videoCardOpacity.collectAsState()
+  val episodeCardStyleId by appearancePreferences.episodeCardStyle.collectAsState()
+  val episodeCardOpacity by appearancePreferences.episodeCardOpacity.collectAsState()
 
   return remember(
     unlimitedNameLines,
@@ -149,6 +153,8 @@ fun rememberVideoCardUiConfig(): VideoCardUiConfig {
     swipeRight,
     cardAccentStyleId,
     cardAccentOpacity,
+    episodeCardStyleId,
+    episodeCardOpacity,
   ) {
     VideoCardUiConfig(
       unlimitedNameLines = unlimitedNameLines,
@@ -171,6 +177,8 @@ fun rememberVideoCardUiConfig(): VideoCardUiConfig {
       swipeRight = swipeRight,
       cardAccentStyleId = cardAccentStyleId,
       cardAccentOpacity = cardAccentOpacity,
+      episodeCardStyleId = episodeCardStyleId,
+      episodeCardOpacity = episodeCardOpacity,
     )
   }
 }
@@ -258,8 +266,25 @@ fun VideoCard(
   val resolvedUiConfig = uiConfig ?: rememberVideoCardUiConfig()
   val maxLines = if (resolvedUiConfig.unlimitedNameLines) Int.MAX_VALUE else 2
 
-  val cardAccentStyle = CardAccentStyle.fromId(resolvedUiConfig.cardAccentStyleId)
-  val cardAccentOpacity = resolvedUiConfig.cardAccentOpacity
+  val parsedMediaInfo = remember(video.path, video.displayName) {
+    app.gyrolet.mpvrx.utils.media.MediaInfoParser.parse(
+      video.displayName.ifBlank { video.path.substringAfterLast('/') },
+    )
+  }
+  val isEpisodeFile = !video.isAudio &&
+    parsedMediaInfo.type == "tv" &&
+    (parsedMediaInfo.season != null || parsedMediaInfo.episode != null) &&
+    !parsedMediaInfo.isEpisodeAmbiguous
+
+  val cardAccentStyle = CardAccentStyle.fromId(
+    if (isEpisodeFile) resolvedUiConfig.episodeCardStyleId
+    else resolvedUiConfig.cardAccentStyleId,
+  )
+  val cardAccentOpacity = if (isEpisodeFile) {
+    resolvedUiConfig.episodeCardOpacity
+  } else {
+    resolvedUiConfig.cardAccentOpacity
+  }
   val showThumbnails = resolvedUiConfig.showThumbnails
   val thumbnailQuality = resolvedUiConfig.thumbnailQuality
   val thumbnailGenerator = resolvedUiConfig.thumbnailGenerator

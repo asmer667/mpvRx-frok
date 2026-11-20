@@ -131,8 +131,18 @@ data object SecureFolderScreen : Screen {
     val videoGridColumnsPortrait by browserPreferences.videoGridColumnsPortrait.collectAsState()
     val videoGridColumnsLandscape by browserPreferences.videoGridColumnsLandscape.collectAsState()
 
+    val videoCardStyle by appearancePreferences.videoCardStyle.collectAsState()
+
+    val cardAccentOpacity by appearancePreferences.videoCardOpacity.collectAsState()
+    val episodeCardStyle by appearancePreferences.episodeCardStyle.collectAsState()
+    val episodeCardOpacity by appearancePreferences.episodeCardOpacity.collectAsState()
+
     val videoCardUiConfig =
       remember(
+        videoCardStyle,
+        cardAccentOpacity,
+        episodeCardStyle,
+        episodeCardOpacity,
         unlimitedNameLines,
         showVideoThumbnails,
         showSizeChip,
@@ -151,6 +161,10 @@ data object SecureFolderScreen : Screen {
         thumbnailGenerator,
       ) {
         VideoCardUiConfig(
+          cardAccentStyleId = videoCardStyle,
+          cardAccentOpacity = cardAccentOpacity,
+          episodeCardStyleId = episodeCardStyle,
+          episodeCardOpacity = episodeCardOpacity,
           unlimitedNameLines = unlimitedNameLines,
           showThumbnails = showVideoThumbnails,
           showSizeChip = showSizeChip,

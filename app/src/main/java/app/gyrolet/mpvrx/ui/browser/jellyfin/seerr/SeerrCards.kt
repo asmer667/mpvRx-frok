@@ -37,6 +37,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import app.gyrolet.mpvrx.preferences.AppearancePreferences
+import app.gyrolet.mpvrx.preferences.preference.collectAsState
+import org.koin.compose.koinInject
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,6 +61,8 @@ import app.gyrolet.mpvrx.domain.seerr.MediaType
 import app.gyrolet.mpvrx.domain.seerr.RequestStatus
 import app.gyrolet.mpvrx.domain.seerr.SearchResultItem
 import app.gyrolet.mpvrx.presentation.components.RemoteImage
+import app.gyrolet.mpvrx.presentation.components.CardAccentStyle
+import app.gyrolet.mpvrx.presentation.components.cardAccentDecoration
 import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
 
@@ -69,6 +76,10 @@ fun SeerrMediaCard(
   modifier: Modifier = Modifier,
   cardWidth: Dp = 135.dp,
 ) {
+  val appearancePreferences = koinInject<AppearancePreferences>()
+  val episodeOpacity by appearancePreferences.episodeCardOpacity.collectAsState()
+  val episodeStyleId by appearancePreferences.episodeCardStyle.collectAsState()
+  val episodeStyle = CardAccentStyle.fromId(episodeStyleId)
   Column(
     modifier = modifier.width(cardWidth),
   ) {
@@ -151,6 +162,22 @@ fun SeerrMediaCard(
 
     Spacer(modifier = Modifier.height(6.dp))
 
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .background(
+          MaterialTheme.colorScheme.surfaceContainerLow.copy(
+            alpha = episodeOpacity.coerceIn(0.35f, 1f),
+          ),
+          RoundedCornerShape(8.dp),
+        )
+        .cardAccentDecoration(
+          style = episodeStyle,
+          opacity = episodeOpacity,
+          shape = RoundedCornerShape(8.dp),
+        )
+        .padding(horizontal = 8.dp, vertical = 6.dp),
+    ) {
     Text(
       text = item.getDisplayTitle(),
       style = MaterialTheme.typography.bodyMedium,
@@ -183,6 +210,7 @@ fun SeerrMediaCard(
         fontWeight = FontWeight.Medium,
         color = MaterialTheme.colorScheme.primary,
       )
+    }
     }
   }
 }
@@ -307,6 +335,10 @@ fun SeerrRequestCard(
   modifier: Modifier = Modifier,
   cardWidth: Dp = 230.dp,
 ) {
+  val appearancePreferences = koinInject<AppearancePreferences>()
+  val episodeOpacity by appearancePreferences.episodeCardOpacity.collectAsState()
+  val episodeStyleId by appearancePreferences.episodeCardStyle.collectAsState()
+  val episodeStyle = CardAccentStyle.fromId(episodeStyleId)
   Column(
     modifier = modifier.width(cardWidth),
   ) {
@@ -488,6 +520,22 @@ fun SeerrRequestCard(
     // Title and Requester underneath thumbnail (not clipped)
     Spacer(modifier = Modifier.height(6.dp))
 
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .background(
+          MaterialTheme.colorScheme.surfaceContainerLow.copy(
+            alpha = episodeOpacity.coerceIn(0.35f, 1f),
+          ),
+          RoundedCornerShape(8.dp),
+        )
+        .cardAccentDecoration(
+          style = episodeStyle,
+          opacity = episodeOpacity,
+          shape = RoundedCornerShape(8.dp),
+        )
+        .padding(horizontal = 8.dp, vertical = 6.dp),
+    ) {
     Text(
       text = request.media.getDisplayTitle(),
       style = MaterialTheme.typography.bodyMedium,
@@ -522,6 +570,7 @@ fun SeerrRequestCard(
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
       )
+    }
     }
   }
 }

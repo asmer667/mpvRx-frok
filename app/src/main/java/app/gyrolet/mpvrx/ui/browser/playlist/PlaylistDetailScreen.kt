@@ -925,8 +925,16 @@ private fun PlaylistVideoListContent(
   val swipeRight by browserPreferences.videoSwipeRight.collectAsState()
   val density = LocalDensity.current
   val audioThumbnailSizePx = with(density) { musicCoverArtSize.dp.roundToPx() }
+  val videoCardStyle by appearancePreferences.videoCardStyle.collectAsState()
+  val cardAccentOpacity by appearancePreferences.videoCardOpacity.collectAsState()
+  val episodeCardStyle by appearancePreferences.episodeCardStyle.collectAsState()
+  val episodeCardOpacity by appearancePreferences.episodeCardOpacity.collectAsState()
   val videoCardUiConfig =
     remember(
+      videoCardStyle,
+      cardAccentOpacity,
+      episodeCardStyle,
+      episodeCardOpacity,
       unlimitedNameLines,
       showVideoThumbnails,
       showSizeChip,
@@ -947,6 +955,10 @@ private fun PlaylistVideoListContent(
       swipeRight,
     ) {
       VideoCardUiConfig(
+        cardAccentStyleId = videoCardStyle,
+        cardAccentOpacity = cardAccentOpacity,
+        episodeCardStyleId = episodeCardStyle,
+        episodeCardOpacity = episodeCardOpacity,
         unlimitedNameLines = unlimitedNameLines,
         showThumbnails = showVideoThumbnails,
         showSizeChip = showSizeChip,

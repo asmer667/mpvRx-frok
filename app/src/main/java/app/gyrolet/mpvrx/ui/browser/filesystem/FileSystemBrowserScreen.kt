@@ -1422,6 +1422,10 @@ private fun FileSystemBrowserContent(
   val gesturePreferences = koinInject<GesturePreferences>()
   val browserPreferences = koinInject<BrowserPreferences>()
   val appearancePreferences = koinInject<AppearancePreferences>()
+  val videoCardStyle by appearancePreferences.videoCardStyle.collectAsState()
+  val cardAccentOpacity by appearancePreferences.videoCardOpacity.collectAsState()
+  val episodeCardStyle by appearancePreferences.episodeCardStyle.collectAsState()
+  val episodeCardOpacity by appearancePreferences.episodeCardOpacity.collectAsState()
   val thumbnailRepository = koinInject<app.gyrolet.mpvrx.domain.thumbnail.ThumbnailRepository>()
   val mediaLayoutMode by browserPreferences.mediaLayoutMode.collectAsState()
   val musicCoverArtSize by browserPreferences.musicCoverArtSize.collectAsState()
@@ -1447,6 +1451,10 @@ private fun FileSystemBrowserContent(
   val swipeRight by browserPreferences.videoSwipeRight.collectAsState()
   val videoCardUiConfig =
     remember(
+      videoCardStyle,
+      cardAccentOpacity,
+      episodeCardStyle,
+      episodeCardOpacity,
       unlimitedNameLines,
       showVideoThumbnails,
       showSizeChip,
@@ -1468,6 +1476,8 @@ private fun FileSystemBrowserContent(
       archiveMode,
     ) {
       VideoCardUiConfig(
+        cardAccentStyleId = videoCardStyle,
+        cardAccentOpacity = cardAccentOpacity,
         unlimitedNameLines = unlimitedNameLines,
         showThumbnails = showVideoThumbnails,
         showSizeChip = showSizeChip,
@@ -1913,6 +1923,10 @@ private fun FileSystemSearchContent(
   val gesturePreferences = koinInject<GesturePreferences>()
   val browserPreferences = koinInject<BrowserPreferences>()
   val appearancePreferences = koinInject<AppearancePreferences>()
+  val videoCardStyle by appearancePreferences.videoCardStyle.collectAsState()
+  val cardAccentOpacity by appearancePreferences.videoCardOpacity.collectAsState()
+  val episodeCardStyle by appearancePreferences.episodeCardStyle.collectAsState()
+  val episodeCardOpacity by appearancePreferences.episodeCardOpacity.collectAsState()
   val musicCoverArtSize by browserPreferences.musicCoverArtSize.collectAsState()
   val audioCoverArtSizePx = with(LocalDensity.current) { musicCoverArtSize.dp.roundToPx() }
   val tapThumbnailToSelect by gesturePreferences.tapThumbnailToSelect.collectAsState()
@@ -1936,6 +1950,10 @@ private fun FileSystemSearchContent(
   val swipeRight by browserPreferences.videoSwipeRight.collectAsState()
   val videoCardUiConfig =
     remember(
+      videoCardStyle,
+      cardAccentOpacity,
+      episodeCardStyle,
+      episodeCardOpacity,
       unlimitedNameLines,
       showVideoThumbnails,
       showSizeChip,
@@ -1957,6 +1975,8 @@ private fun FileSystemSearchContent(
       archiveMode,
     ) {
       VideoCardUiConfig(
+        cardAccentStyleId = videoCardStyle,
+        cardAccentOpacity = cardAccentOpacity,
         unlimitedNameLines = unlimitedNameLines,
         showThumbnails = showVideoThumbnails,
         showSizeChip = showSizeChip,

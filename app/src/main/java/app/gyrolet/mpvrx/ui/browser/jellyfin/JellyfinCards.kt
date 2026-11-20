@@ -72,6 +72,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import app.gyrolet.mpvrx.preferences.AppearancePreferences
+import app.gyrolet.mpvrx.preferences.preference.collectAsState
+import org.koin.compose.koinInject
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -111,6 +115,8 @@ import app.gyrolet.mpvrx.data.jellyfin.JellyfinClient
 import app.gyrolet.mpvrx.domain.jellyfin.JellyfinItem
 import app.gyrolet.mpvrx.domain.jellyfin.JellyfinServer
 import app.gyrolet.mpvrx.presentation.components.RemoteImage
+import app.gyrolet.mpvrx.presentation.components.CardAccentStyle
+import app.gyrolet.mpvrx.presentation.components.cardAccentDecoration
 import app.gyrolet.mpvrx.ui.browser.cards.MediaSelectionNeighbors
 import app.gyrolet.mpvrx.ui.browser.cards.mediaCardClickable
 import app.gyrolet.mpvrx.ui.icons.Icon
@@ -1703,6 +1709,10 @@ fun JellyfinEpisodeCard(
   onDownload: (() -> Unit)? = null,
   onCancelDownload: (() -> Unit)? = null,
 ) {
+  val appearancePreferences = koinInject<AppearancePreferences>()
+  val episodeOpacity by appearancePreferences.episodeCardOpacity.collectAsState()
+  val episodeStyleId by appearancePreferences.episodeCardStyle.collectAsState()
+  val episodeStyle = CardAccentStyle.fromId(episodeStyleId)
   val hasOwnImage = !item.primaryImageTag.isNullOrBlank()
   val fallbackSeriesImage = !hasOwnImage && !item.seriesId.isNullOrBlank() && !item.seriesPrimaryImageTag.isNullOrBlank()
   val imageItemId = if (fallbackSeriesImage) item.seriesId!! else item.id
@@ -1760,11 +1770,21 @@ fun JellyfinEpisodeCard(
           onLongClick = onLongClick,
         ),
     shape = cardShape,
-    color = backgroundColor,
+    color = backgroundColor.copy(alpha = episodeOpacity.coerceIn(0.35f, 1f)),
     border = BorderStroke(1.dp, borderColor),
   ) {
-    Row(
-      modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
+    Box(modifier = Modifier.fillMaxWidth()) {
+      Box(
+        modifier = Modifier
+          .matchParentSize()
+          .cardAccentDecoration(
+            style = episodeStyle,
+            opacity = episodeOpacity,
+            shape = cardShape,
+          ),
+      )
+      Row(
+        modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -2034,6 +2054,7 @@ fun JellyfinEpisodeCard(
             )
           }
         null -> {}
+      }
       }
     }
   }

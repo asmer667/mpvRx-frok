@@ -61,6 +61,7 @@
   <string name="pref_card_customization_summary">خصص زخارف بطاقات المجلدات والفيديوهات</string>
   <string name="pref_card_customization_folders">المجلدات</string>
   <string name="pref_card_customization_videos">الفيديوهات</string>
+  <string name="pref_card_customization_episodes">الحلقات والأفلام</string>
   <string name="pref_card_customization_preview">معاينة</string>
   <string name="pref_card_customization_style">النمط</string>
   <string name="pref_card_customization_opacity">شفافية الزخرفة</string>
@@ -3261,4 +3262,7 @@
   <string name="permission_video_access_summary">يسمح بالوصول إلى الفيديوهات في Downloads وMovies وDCIM.</string>
   <string name="permission_media_access_summary">يسمح بالوصول إلى ملفات الفيديو والصوت المخزنة.</string>
   <string name="pref_audio_passthrough_summary">أرسل الصوت المحيطي إلى جهاز الاستقبال دون فك ترميز أو مؤثرات.</string>
+  <string name="card_folder_opacity">شفافية بطاقات المجلدات</string>
+  <string name="card_video_opacity">شفافية بطاقات معلومات الفيديو</string>
+  <string name="card_episode_opacity">شفافية بطاقات الحلقات والأفلام</string>
 </resources>
