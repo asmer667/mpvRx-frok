@@ -45,6 +45,7 @@ import app.gyrolet.mpvrx.preferences.AppearancePreferences
 import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.presentation.components.CardAccentStyle
 import app.gyrolet.mpvrx.presentation.components.cardAccentDecoration
+import app.gyrolet.mpvrx.ui.browser.cards.FolderStyleIcon
 import app.gyrolet.mpvrx.ui.utils.LocalBackStack
 import app.gyrolet.mpvrx.ui.utils.popSafely
 import kotlinx.serialization.Serializable
@@ -61,11 +62,13 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
     val savedFolderStyle by preferences.folderCardStyle.collectAsState()
     val savedVideoStyle by preferences.videoCardStyle.collectAsState()
     val savedEpisodeStyle by preferences.episodeCardStyle.collectAsState()
+    val savedFolderIconStyle by preferences.folderIconStyle.collectAsState()
     val savedFolderOpacity by preferences.folderCardOpacity.collectAsState()
     val savedVideoOpacity by preferences.videoCardOpacity.collectAsState()
     val savedEpisodeOpacity by preferences.episodeCardOpacity.collectAsState()
 
     var folderStyleId by rememberSaveable { mutableStateOf(savedFolderStyle) }
+    var folderIconStyleId by rememberSaveable { mutableStateOf(savedFolderIconStyle.coerceIn(0, 23)) }
     var videoStyleId by rememberSaveable { mutableStateOf(savedVideoStyle) }
     var episodeStyleId by rememberSaveable { mutableStateOf(savedEpisodeStyle) }
     var folderOpacity by rememberSaveable {
@@ -131,6 +134,7 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
               opacity = opacity,
               isFolder = selectedType == 0,
               isEpisode = selectedType == 2,
+              folderIconStyleId = folderIconStyleId,
             )
 
             Row(
@@ -155,6 +159,30 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
                 modifier = Modifier.weight(1f),
                 onClick = { selectedType = 2 },
               )
+            }
+
+            if (selectedType == 0) {
+              Text(
+                if (Locale.getDefault().language == "ar") "شكل أيقونة المجلد" else "Folder icon shape",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+              )
+              (0..23).toList().chunked(2).forEach { pair ->
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                  pair.forEach { id ->
+                    FolderIconStyleChoice(
+                      styleId = id,
+                      selected = folderIconStyleId == id,
+                      modifier = Modifier.weight(1f),
+                      onClick = { folderIconStyleId = id },
+                    )
+                  }
+                  if (pair.size == 1) Spacer(Modifier.weight(1f))
+                }
+              }
             }
 
             Text(
@@ -240,6 +268,7 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
             Button(
               onClick = {
                 preferences.folderCardStyle.set(folderStyleId)
+                preferences.folderIconStyle.set(folderIconStyleId)
                 preferences.videoCardStyle.set(videoStyleId)
                 preferences.episodeCardStyle.set(episodeStyleId)
                 preferences.folderCardOpacity.set(folderOpacity)
@@ -280,6 +309,67 @@ private fun AccentTypeTab(
       style = MaterialTheme.typography.labelLarge,
       fontWeight = FontWeight.SemiBold,
     )
+  }
+}
+
+@Composable
+private fun FolderIconStyleChoice(
+  styleId: Int,
+  selected: Boolean,
+  modifier: Modifier = Modifier,
+  onClick: () -> Unit,
+) {
+  val arabic = Locale.getDefault().language == "ar"
+  val namesAr = listOf(
+    "كلاسيكي", "ظل متدرج", "ذهبي", "زجاجي أزرق", "محدد", "طبقات",
+    "ذهبي لامع", "مفتوح", "ذهبي مضيء", "أزرق حديث", "بنفسجي", "أخضر مفتوح",
+    "وردي ناعم", "معدني", "ذهبي مرصع", "أزرق عميق", "بنفسجي داكن",
+    "أخضر شفاف", "كهرماني", "فيروزي",
+    "موجة انسيابية", "هاتف قديم", "قصاصة ورقية", "تجميعي هندسي",
+  )
+  val namesEn = listOf(
+    "Classic", "Soft shadow", "Golden", "Blue glass", "Outline", "Layered",
+    "Bright gold", "Open", "Gold shine", "Modern blue", "Violet", "Open green",
+    "Soft rose", "Metallic", "Gold pearl", "Deep blue", "Dark violet",
+    "Glass green", "Amber", "Turquoise",
+    "Flowing wave", "Vintage phone", "Paper clipping", "Geometric collage",
+  )
+  Surface(
+    modifier = modifier.clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick),
+    shape = RoundedCornerShape(12.dp),
+    color = if (selected) MaterialTheme.colorScheme.secondaryContainer
+    else MaterialTheme.colorScheme.surfaceContainerLow,
+    border = if (selected) androidx.compose.foundation.BorderStroke(
+      1.dp, MaterialTheme.colorScheme.primary,
+    ) else null,
+  ) {
+    Column(
+      modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+      Box(
+        modifier = Modifier.size(58.dp),
+        contentAlignment = Alignment.Center,
+      ) {
+        FolderStyleIcon(
+          styleId = styleId,
+          contentDescription = null,
+          modifier = Modifier.fillMaxSize(),
+          tint = MaterialTheme.colorScheme.primary,
+        )
+      }
+      Text(
+        if (arabic) namesAr[styleId] else namesEn[styleId],
+        style = MaterialTheme.typography.labelSmall,
+        color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer
+        else MaterialTheme.colorScheme.onSurface,
+        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+      )
+      if (selected) {
+        Text("✓", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+      }
+    }
   }
 }
 
@@ -361,6 +451,7 @@ private fun CardAccentPreviewCard(
   opacity: Float,
   isFolder: Boolean,
   isEpisode: Boolean,
+  folderIconStyleId: Int,
 ) {
   val shape = RoundedCornerShape(18.dp)
   Surface(
@@ -404,7 +495,12 @@ private fun CardAccentPreviewCard(
               ),
             contentAlignment = Alignment.Center,
           ) {
-            Text("📁", style = MaterialTheme.typography.headlineMedium)
+            FolderStyleIcon(
+              styleId = folderIconStyleId,
+              contentDescription = null,
+              modifier = Modifier.fillMaxSize().padding(8.dp),
+              tint = Color.White,
+            )
           }
           Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Text(

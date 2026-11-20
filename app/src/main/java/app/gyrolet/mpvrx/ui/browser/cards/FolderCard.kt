@@ -94,6 +94,7 @@ data class FolderCardUiConfig(
   val swipeRight: VideoSwipeAction = VideoSwipeAction.ToggleWatched,
   val thumbnailGenerator: app.gyrolet.mpvrx.preferences.ThumbnailGenerator = app.gyrolet.mpvrx.preferences.ThumbnailGenerator.Auto,
   val cardAccentStyleId: Int = 1,
+  val folderIconStyleId: Int = 0,
   val cardAccentOpacity: Float = 1f,
 )
 
@@ -117,6 +118,7 @@ fun rememberFolderCardUiConfig(viewPreferences: BrowserPageViewPreferences? = nu
   val swipeLeft by browserPreferences.videoSwipeLeft.collectAsState()
   val swipeRight by browserPreferences.videoSwipeRight.collectAsState()
   val cardAccentStyleId by appearancePreferences.folderCardStyle.collectAsState()
+  val folderIconStyleId by appearancePreferences.folderIconStyle.collectAsState()
   val cardAccentOpacity by appearancePreferences.folderCardOpacity.collectAsState()
 
   return remember(
@@ -134,6 +136,7 @@ fun rememberFolderCardUiConfig(viewPreferences: BrowserPageViewPreferences? = nu
     swipeLeft,
     swipeRight,
     cardAccentStyleId,
+    folderIconStyleId,
     cardAccentOpacity,
   ) {
     FolderCardUiConfig(
@@ -151,6 +154,7 @@ fun rememberFolderCardUiConfig(viewPreferences: BrowserPageViewPreferences? = nu
       swipeLeft = swipeLeft,
       swipeRight = swipeRight,
       cardAccentStyleId = cardAccentStyleId,
+      folderIconStyleId = folderIconStyleId,
       cardAccentOpacity = cardAccentOpacity,
     )
   }
@@ -403,14 +407,13 @@ fun FolderCard(
                 contentScale = ContentScale.Crop,
               )
             } else {
-              Icon(
-                customIcon ?: Icons.RoundedFilled.Folder,
-                contentDescription =
-                  androidx.compose.ui.res
-                    .stringResource(app.gyrolet.mpvrx.R.string.ui_folder),
-                modifier = placeholderIconSize?.let { Modifier.size(it) } ?: Modifier.fillMaxWidth().aspectRatio(aspect),
-                tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
-              )
+              if (customIcon != null) {
+              Icon(customIcon, contentDescription = androidx.compose.ui.res
+                    .stringResource(app.gyrolet.mpvrx.R.string.ui_folder), modifier = placeholderIconSize?.let { Modifier.size(it) } ?: Modifier.fillMaxWidth().aspectRatio(aspect), tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f))
+            } else {
+              FolderStyleIcon(styleId = resolvedUiConfig.folderIconStyleId, contentDescription = androidx.compose.ui.res
+                    .stringResource(app.gyrolet.mpvrx.R.string.ui_folder), modifier = placeholderIconSize?.let { Modifier.size(it) } ?: Modifier.fillMaxWidth().aspectRatio(aspect), tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f))
+            }
             }
 
             if (newVideoCount > 0 && !showSelectionBadge) {
@@ -535,14 +538,13 @@ fun FolderCard(
                 contentScale = ContentScale.Crop,
               )
             } else {
-              Icon(
-                customIcon ?: Icons.RoundedFilled.Folder,
-                contentDescription =
-                  androidx.compose.ui.res
-                    .stringResource(app.gyrolet.mpvrx.R.string.ui_folder),
-                modifier = placeholderIconSize?.let { Modifier.size(it) } ?: Modifier.matchParentSize(),
-                tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
-              )
+              if (customIcon != null) {
+              Icon(customIcon, contentDescription = androidx.compose.ui.res
+                    .stringResource(app.gyrolet.mpvrx.R.string.ui_folder), modifier = placeholderIconSize?.let { Modifier.size(it) } ?: Modifier.matchParentSize(), tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f))
+            } else {
+              FolderStyleIcon(styleId = resolvedUiConfig.folderIconStyleId, contentDescription = androidx.compose.ui.res
+                    .stringResource(app.gyrolet.mpvrx.R.string.ui_folder), modifier = placeholderIconSize?.let { Modifier.size(it) } ?: Modifier.matchParentSize(), tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f))
+            }
             }
 
             // Show new video count badge if folder contains new videos

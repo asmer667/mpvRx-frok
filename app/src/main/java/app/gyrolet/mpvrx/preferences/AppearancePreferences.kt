@@ -79,6 +79,7 @@ class AppearancePreferences(
   val customWallpaperUseColors = preferenceStore.getBoolean("custom_wallpaper_use_colors", false)
   val amoledMode = preferenceStore.getBoolean("amoled_mode", false)
   val folderCardStyle = preferenceStore.getInt("folder_card_style", 1)
+  val folderIconStyle = preferenceStore.getInt("folder_icon_style", 0)
   val videoCardStyle = preferenceStore.getInt("video_card_style", 11)
   val episodeCardStyle = preferenceStore.getInt("episode_card_style", 61)
 
