@@ -21,6 +21,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -44,6 +45,8 @@ import app.gyrolet.mpvrx.R
 import app.gyrolet.mpvrx.preferences.AppearancePreferences
 import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.presentation.components.CardAccentStyle
+import app.gyrolet.mpvrx.presentation.components.CardLayoutStyle
+import app.gyrolet.mpvrx.presentation.components.cardLayoutStyle
 import app.gyrolet.mpvrx.presentation.components.cardAccentDecoration
 import app.gyrolet.mpvrx.ui.browser.cards.FolderStyleIcon
 import app.gyrolet.mpvrx.ui.utils.LocalBackStack
@@ -63,25 +66,47 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
     val savedVideoStyle by preferences.videoCardStyle.collectAsState()
     val savedEpisodeStyle by preferences.episodeCardStyle.collectAsState()
     val savedFolderIconStyle by preferences.folderIconStyle.collectAsState()
+    val savedFolderLayout by preferences.folderCardLayoutStyle.collectAsState()
+    val savedVideoLayout by preferences.videoCardLayoutStyle.collectAsState()
+    val savedEpisodeLayout by preferences.episodeCardLayoutStyle.collectAsState()
+    val savedRandomFolder by preferences.randomFolderCardLayout.collectAsState()
+    val savedRandomVideo by preferences.randomVideoCardLayout.collectAsState()
+    val savedRandomEpisode by preferences.randomEpisodeCardLayout.collectAsState()
     val savedFolderOpacity by preferences.folderCardOpacity.collectAsState()
     val savedVideoOpacity by preferences.videoCardOpacity.collectAsState()
     val savedEpisodeOpacity by preferences.episodeCardOpacity.collectAsState()
 
     var folderStyleId by rememberSaveable { mutableStateOf(savedFolderStyle) }
     var folderIconStyleId by rememberSaveable { mutableStateOf(savedFolderIconStyle.coerceIn(0, 23)) }
+    var folderLayoutId by rememberSaveable { mutableStateOf(savedFolderLayout.coerceIn(0, 16)) }
+    var videoLayoutId by rememberSaveable { mutableStateOf(savedVideoLayout.coerceIn(0, 16)) }
+    var episodeLayoutId by rememberSaveable { mutableStateOf(savedEpisodeLayout.coerceIn(0, 16)) }
+    var randomFolder by rememberSaveable { mutableStateOf(savedRandomFolder) }
+    var randomVideo by rememberSaveable { mutableStateOf(savedRandomVideo) }
+    var randomEpisode by rememberSaveable { mutableStateOf(savedRandomEpisode) }
     var videoStyleId by rememberSaveable { mutableStateOf(savedVideoStyle) }
     var episodeStyleId by rememberSaveable { mutableStateOf(savedEpisodeStyle) }
     var folderOpacity by rememberSaveable {
-      mutableStateOf(savedFolderOpacity.coerceIn(0.35f, 1f))
+      mutableStateOf(savedFolderOpacity.coerceIn(0f, 1f))
     }
     var videoOpacity by rememberSaveable {
-      mutableStateOf(savedVideoOpacity.coerceIn(0.35f, 1f))
+      mutableStateOf(savedVideoOpacity.coerceIn(0f, 1f))
     }
     var episodeOpacity by rememberSaveable {
-      mutableStateOf(savedEpisodeOpacity.coerceIn(0.35f, 1f))
+      mutableStateOf(savedEpisodeOpacity.coerceIn(0f, 1f))
     }
     var selectedType by rememberSaveable { mutableStateOf(0) }
 
+    val layoutId = when (selectedType) {
+      0 -> folderLayoutId
+      1 -> videoLayoutId
+      else -> episodeLayoutId
+    }
+    val randomEnabled = when (selectedType) {
+      0 -> randomFolder
+      1 -> randomVideo
+      else -> randomEpisode
+    }
     val opacity = when (selectedType) {
       0 -> folderOpacity
       1 -> videoOpacity
@@ -135,6 +160,7 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
               isFolder = selectedType == 0,
               isEpisode = selectedType == 2,
               folderIconStyleId = folderIconStyleId,
+              layoutStyleId = layoutId,
             )
 
             Row(
@@ -158,6 +184,70 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
                 selected = selectedType == 2,
                 modifier = Modifier.weight(1f),
                 onClick = { selectedType = 2 },
+              )
+            }
+
+            Text(
+              if (Locale.getDefault().language == "ar") "تصميم البطاقة (17 تصميماً)" else "Card layout (17 designs)",
+              style = MaterialTheme.typography.titleSmall,
+              fontWeight = FontWeight.SemiBold,
+            )
+            CardLayoutStyle.entries.chunked(2).forEach { pair ->
+              Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+              ) {
+                pair.forEach { design ->
+                  Surface(
+                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp))
+                      .clickable {
+                        when (selectedType) {
+                          0 -> folderLayoutId = design.id
+                          1 -> videoLayoutId = design.id
+                          else -> episodeLayoutId = design.id
+                        }
+                      },
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (layoutId == design.id) MaterialTheme.colorScheme.secondaryContainer
+                      else MaterialTheme.colorScheme.surfaceContainerLow,
+                  ) {
+                    Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                      Box(
+                        Modifier.fillMaxWidth().height(38.dp)
+                          .clip(RoundedCornerShape(8.dp))
+                          .cardLayoutStyle(design.id, 1f, RoundedCornerShape(8.dp)),
+                      )
+                      Text(
+                        if (Locale.getDefault().language == "ar") design.nameAr else design.nameEn,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                      )
+                      if (layoutId == design.id) Text("✓", color = MaterialTheme.colorScheme.primary)
+                    }
+                  }
+                }
+                if (pair.size == 1) Spacer(Modifier.weight(1f))
+              }
+            }
+
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              Checkbox(
+                checked = randomEnabled,
+                onCheckedChange = { enabled ->
+                  when (selectedType) {
+                    0 -> randomFolder = enabled
+                    1 -> randomVideo = enabled
+                    else -> randomEpisode = enabled
+                  }
+                },
+              )
+              Text(
+                if (Locale.getDefault().language == "ar") "تغيير التصميم عشوائياً عند العودة للتطبيق"
+                else "Randomize design when returning to app",
+                style = MaterialTheme.typography.bodySmall,
               )
             }
 
@@ -248,7 +338,7 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
                   else -> episodeOpacity = it
                 }
               },
-              valueRange = 0.35f..1f,
+              valueRange = 0f..1f,
             )
 
           }
@@ -269,6 +359,12 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
               onClick = {
                 preferences.folderCardStyle.set(folderStyleId)
                 preferences.folderIconStyle.set(folderIconStyleId)
+                preferences.folderCardLayoutStyle.set(folderLayoutId)
+                preferences.videoCardLayoutStyle.set(videoLayoutId)
+                preferences.episodeCardLayoutStyle.set(episodeLayoutId)
+                preferences.randomFolderCardLayout.set(randomFolder)
+                preferences.randomVideoCardLayout.set(randomVideo)
+                preferences.randomEpisodeCardLayout.set(randomEpisode)
                 preferences.videoCardStyle.set(videoStyleId)
                 preferences.episodeCardStyle.set(episodeStyleId)
                 preferences.folderCardOpacity.set(folderOpacity)
@@ -404,6 +500,11 @@ private fun AccentStyleChoice(
           .height(42.dp)
           .clip(previewShape)
           .background(MaterialTheme.colorScheme.surface)
+          .cardLayoutStyle(
+            styleId = layoutStyleId,
+            opacity = opacity,
+            shape = shape,
+          )
           .cardAccentDecoration(
             style = style,
             opacity = 0.95f,
@@ -452,6 +553,7 @@ private fun CardAccentPreviewCard(
   isFolder: Boolean,
   isEpisode: Boolean,
   folderIconStyleId: Int,
+  layoutStyleId: Int,
 ) {
   val shape = RoundedCornerShape(18.dp)
   Surface(

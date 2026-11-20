@@ -329,6 +329,14 @@ class App :
     isInForeground = true
     if (activity is PlayerActivity) PlaybackPerformanceTrace.mark("PLAYER_ACTIVITY_STARTED")
     if (startedActivityCount++ == 0) {
+      runCatching {
+        val appearance = getKoin().get<AppearancePreferences>()
+        app.gyrolet.mpvrx.presentation.components.CardLayoutStyleRuntime.randomize(
+          folder = appearance.randomFolderCardLayout.get(),
+          video = appearance.randomVideoCardLayout.get(),
+          episode = appearance.randomEpisodeCardLayout.get(),
+        )
+      }.onFailure { Log.w(TAG, "Random card layout update failed", it) }
       mediaStoreLiveMonitor.start()
       getKoin().get<app.gyrolet.mpvrx.domain.syncplay.SyncplayManager>().onAppForegrounded()
       TvRemoteServer.onAppForeground(this)

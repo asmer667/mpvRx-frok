@@ -58,6 +58,7 @@ import app.gyrolet.mpvrx.domain.archive.ZipArchiveMedia
 import app.gyrolet.mpvrx.domain.media.model.VideoFolder
 import app.gyrolet.mpvrx.domain.thumbnail.ThumbnailRepository
 import app.gyrolet.mpvrx.presentation.components.cardAccentDecoration
+import app.gyrolet.mpvrx.presentation.components.cardLayoutStyle
 import app.gyrolet.mpvrx.preferences.AppearancePreferences
 import app.gyrolet.mpvrx.preferences.BrowserPageViewPreferences
 import app.gyrolet.mpvrx.preferences.BrowserPreferences
@@ -94,6 +95,7 @@ data class FolderCardUiConfig(
   val swipeRight: VideoSwipeAction = VideoSwipeAction.ToggleWatched,
   val thumbnailGenerator: app.gyrolet.mpvrx.preferences.ThumbnailGenerator = app.gyrolet.mpvrx.preferences.ThumbnailGenerator.Auto,
   val cardAccentStyleId: Int = 1,
+  val cardLayoutStyleId: Int = 0,
   val folderIconStyleId: Int = 0,
   val cardAccentOpacity: Float = 1f,
 )
@@ -118,6 +120,11 @@ fun rememberFolderCardUiConfig(viewPreferences: BrowserPageViewPreferences? = nu
   val swipeLeft by browserPreferences.videoSwipeLeft.collectAsState()
   val swipeRight by browserPreferences.videoSwipeRight.collectAsState()
   val cardAccentStyleId by appearancePreferences.folderCardStyle.collectAsState()
+  val cardLayoutStyleId by appearancePreferences.folderCardLayoutStyle.collectAsState()
+  val randomFolderLayout by appearancePreferences.randomFolderCardLayout.collectAsState()
+  val effectiveFolderLayoutId =
+    if (randomFolderLayout) app.gyrolet.mpvrx.presentation.components.CardLayoutStyleRuntime.folderId
+    else cardLayoutStyleId
   val folderIconStyleId by appearancePreferences.folderIconStyle.collectAsState()
   val cardAccentOpacity by appearancePreferences.folderCardOpacity.collectAsState()
 
@@ -136,6 +143,7 @@ fun rememberFolderCardUiConfig(viewPreferences: BrowserPageViewPreferences? = nu
     swipeLeft,
     swipeRight,
     cardAccentStyleId,
+    effectiveFolderLayoutId,
     folderIconStyleId,
     cardAccentOpacity,
   ) {
@@ -154,6 +162,7 @@ fun rememberFolderCardUiConfig(viewPreferences: BrowserPageViewPreferences? = nu
       swipeLeft = swipeLeft,
       swipeRight = swipeRight,
       cardAccentStyleId = cardAccentStyleId,
+      cardLayoutStyleId = effectiveFolderLayoutId,
       folderIconStyleId = folderIconStyleId,
       cardAccentOpacity = cardAccentOpacity,
     )
@@ -343,6 +352,16 @@ fun FolderCard(
             .matchParentSize()
             .clip(cardShape)
             .background(selectionContainerColor),
+      )
+
+      Box(
+        modifier = Modifier
+          .matchParentSize()
+          .cardLayoutStyle(
+            styleId = resolvedUiConfig.cardLayoutStyleId,
+            opacity = cardAccentOpacity,
+            shape = cardShape,
+          ),
       )
 
       Box(

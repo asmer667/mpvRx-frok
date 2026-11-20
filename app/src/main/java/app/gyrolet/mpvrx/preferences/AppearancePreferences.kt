@@ -83,6 +83,13 @@ class AppearancePreferences(
   val videoCardStyle = preferenceStore.getInt("video_card_style", 11)
   val episodeCardStyle = preferenceStore.getInt("episode_card_style", 61)
 
+  val folderCardLayoutStyle = preferenceStore.getInt("folder_card_layout_style", 0)
+  val videoCardLayoutStyle = preferenceStore.getInt("video_card_layout_style", 0)
+  val episodeCardLayoutStyle = preferenceStore.getInt("episode_card_layout_style", 0)
+  val randomFolderCardLayout = preferenceStore.getBoolean("random_folder_card_layout", false)
+  val randomVideoCardLayout = preferenceStore.getBoolean("random_video_card_layout", false)
+  val randomEpisodeCardLayout = preferenceStore.getBoolean("random_episode_card_layout", false)
+
   // Preserve the legacy shared opacity for users upgrading from older versions.
   val cardAccentOpacity = preferenceStore.getFloat("card_accent_opacity", 1f)
   val folderCardOpacity = preferenceStore.getFloat(

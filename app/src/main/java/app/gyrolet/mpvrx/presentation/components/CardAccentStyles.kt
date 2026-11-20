@@ -257,7 +257,7 @@ fun Modifier.cardAccentStyle(
 ): Modifier {
   val (startColor, endColor) = styleColors(style)
   val shape = RoundedCornerShape(cornerRadius)
-  val safeOpacity = opacity.coerceIn(0.35f, 1f)
+  val safeOpacity = opacity.coerceIn(0f, 1f)
   val darkBase = Color(0xFF16162A).copy(alpha = safeOpacity)
 
   return when (style) {
@@ -369,7 +369,7 @@ fun Modifier.cardAccentDecoration(
   shape: Shape = RoundedCornerShape(16.dp),
 ): Modifier {
   val (startColor, endColor) = styleColors(style)
-  val safeOpacity = opacity.coerceIn(0.35f, 1f)
+  val safeOpacity = opacity.coerceIn(0f, 1f)
 
   return when (style) {
     in CardAccentStyle.folderStyles() -> {

@@ -65,6 +65,7 @@ import app.gyrolet.mpvrx.preferences.VideoSwipeAction
 import app.gyrolet.mpvrx.presentation.components.RemoteImage
 import app.gyrolet.mpvrx.presentation.components.CardAccentStyle
 import app.gyrolet.mpvrx.presentation.components.cardAccentDecoration
+import app.gyrolet.mpvrx.presentation.components.cardLayoutStyle
 import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
@@ -98,8 +99,10 @@ data class VideoCardUiConfig(
   val swipeRight: VideoSwipeAction = VideoSwipeAction.ToggleWatched,
   val thumbnailGenerator: app.gyrolet.mpvrx.preferences.ThumbnailGenerator = app.gyrolet.mpvrx.preferences.ThumbnailGenerator.Auto,
   val cardAccentStyleId: Int = 11,
+  val videoCardLayoutStyleId: Int = 0,
   val cardAccentOpacity: Float = 1f,
   val episodeCardStyleId: Int = 61,
+  val episodeCardLayoutStyleId: Int = 0,
   val episodeCardOpacity: Float = 1f,
 )
 
@@ -128,8 +131,18 @@ fun rememberVideoCardUiConfig(): VideoCardUiConfig {
   val swipeLeft by browserPreferences.videoSwipeLeft.collectAsState()
   val swipeRight by browserPreferences.videoSwipeRight.collectAsState()
   val cardAccentStyleId by appearancePreferences.videoCardStyle.collectAsState()
+  val videoCardLayoutStyleId by appearancePreferences.videoCardLayoutStyle.collectAsState()
   val cardAccentOpacity by appearancePreferences.videoCardOpacity.collectAsState()
   val episodeCardStyleId by appearancePreferences.episodeCardStyle.collectAsState()
+  val episodeCardLayoutStyleId by appearancePreferences.episodeCardLayoutStyle.collectAsState()
+  val randomVideoLayout by appearancePreferences.randomVideoCardLayout.collectAsState()
+  val randomEpisodeLayout by appearancePreferences.randomEpisodeCardLayout.collectAsState()
+  val effectiveVideoLayoutId =
+    if (randomVideoLayout) app.gyrolet.mpvrx.presentation.components.CardLayoutStyleRuntime.videoId
+    else videoCardLayoutStyleId
+  val effectiveEpisodeLayoutId =
+    if (randomEpisodeLayout) app.gyrolet.mpvrx.presentation.components.CardLayoutStyleRuntime.episodeId
+    else episodeCardLayoutStyleId
   val episodeCardOpacity by appearancePreferences.episodeCardOpacity.collectAsState()
 
   return remember(
@@ -152,8 +165,10 @@ fun rememberVideoCardUiConfig(): VideoCardUiConfig {
     swipeLeft,
     swipeRight,
     cardAccentStyleId,
+    effectiveVideoLayoutId,
     cardAccentOpacity,
     episodeCardStyleId,
+    effectiveEpisodeLayoutId,
     episodeCardOpacity,
   ) {
     VideoCardUiConfig(
@@ -176,8 +191,10 @@ fun rememberVideoCardUiConfig(): VideoCardUiConfig {
       swipeLeft = swipeLeft,
       swipeRight = swipeRight,
       cardAccentStyleId = cardAccentStyleId,
+      videoCardLayoutStyleId = effectiveVideoLayoutId,
       cardAccentOpacity = cardAccentOpacity,
       episodeCardStyleId = episodeCardStyleId,
+      episodeCardLayoutStyleId = effectiveEpisodeLayoutId,
       episodeCardOpacity = episodeCardOpacity,
     )
   }
@@ -382,6 +399,16 @@ fun VideoCard(
             .matchParentSize()
             .clip(cardShape)
             .background(selectionContainerColor),
+      )
+      Box(
+        modifier = Modifier
+          .matchParentSize()
+          .cardLayoutStyle(
+            styleId = if (isEpisodeFile) resolvedUiConfig.episodeCardLayoutStyleId
+              else resolvedUiConfig.videoCardLayoutStyleId,
+            opacity = cardAccentOpacity,
+            shape = cardShape,
+          ),
       )
       Box(
         modifier =
