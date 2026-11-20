@@ -500,11 +500,6 @@ private fun AccentStyleChoice(
           .height(42.dp)
           .clip(previewShape)
           .background(MaterialTheme.colorScheme.surface)
-          .cardLayoutStyle(
-            styleId = layoutStyleId,
-            opacity = opacity,
-            shape = shape,
-          )
           .cardAccentDecoration(
             style = style,
             opacity = 0.95f,
