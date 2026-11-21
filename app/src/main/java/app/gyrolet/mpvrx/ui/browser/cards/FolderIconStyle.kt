@@ -14,6 +14,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 
+/** Twenty selectable vector folder marks. IDs 16..19 remain supported for saved legacy settings. */
+object FolderIconStyleCatalog {
+    val selectableIds: List<Int> = listOf(
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+        10, 11, 12, 13, 14, 15, 20, 21, 22, 23,
+    )
+}
+
 @Composable
 fun FolderStyleIcon(
     styleId: Int,

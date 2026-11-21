@@ -1,0 +1,14 @@
+mpvRx visual redesign - source update
+
+Phase 1 - folder icons:
+- Adds a central catalog of exactly 20 selectable vector icon IDs.
+- Keeps legacy renderer IDs 16..19 supported for existing saved settings.
+- Uses the existing actual Canvas/Path vector artwork, including flowing wave, vintage phone, paper clipping and geometric collage.
+
+Phase 2 - card layouts:
+- Expands the card layout engine to 20 distinct designs (IDs 0..19).
+- Adds camera lens, folded paper cutout and liquid glass designs.
+- Uses distinct clipping paths/silhouettes and individually drawn surface structures, not just palette changes.
+- Updates preview, settings range, labels and independent random selection to cover 20 designs.
+
+Replace these files at the same relative paths in the project. No local Gradle build was run; run the build with GitHub Actions after applying.

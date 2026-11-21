@@ -49,6 +49,7 @@ import app.gyrolet.mpvrx.presentation.components.CardLayoutStyle
 import app.gyrolet.mpvrx.presentation.components.cardLayoutStyle
 import app.gyrolet.mpvrx.presentation.components.cardAccentDecoration
 import app.gyrolet.mpvrx.ui.browser.cards.FolderStyleIcon
+import app.gyrolet.mpvrx.ui.browser.cards.FolderIconStyleCatalog
 import app.gyrolet.mpvrx.ui.utils.LocalBackStack
 import app.gyrolet.mpvrx.ui.utils.popSafely
 import kotlinx.serialization.Serializable
@@ -78,9 +79,9 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
 
     var folderStyleId by rememberSaveable { mutableStateOf(savedFolderStyle) }
     var folderIconStyleId by rememberSaveable { mutableStateOf(savedFolderIconStyle.coerceIn(0, 23)) }
-    var folderLayoutId by rememberSaveable { mutableStateOf(savedFolderLayout.coerceIn(0, 16)) }
-    var videoLayoutId by rememberSaveable { mutableStateOf(savedVideoLayout.coerceIn(0, 16)) }
-    var episodeLayoutId by rememberSaveable { mutableStateOf(savedEpisodeLayout.coerceIn(0, 16)) }
+    var folderLayoutId by rememberSaveable { mutableStateOf(savedFolderLayout.coerceIn(0, 19)) }
+    var videoLayoutId by rememberSaveable { mutableStateOf(savedVideoLayout.coerceIn(0, 19)) }
+    var episodeLayoutId by rememberSaveable { mutableStateOf(savedEpisodeLayout.coerceIn(0, 19)) }
     var randomFolder by rememberSaveable { mutableStateOf(savedRandomFolder) }
     var randomVideo by rememberSaveable { mutableStateOf(savedRandomVideo) }
     var randomEpisode by rememberSaveable { mutableStateOf(savedRandomEpisode) }
@@ -188,7 +189,7 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
             }
 
             Text(
-              if (Locale.getDefault().language == "ar") "تصميم البطاقة (17 تصميماً)" else "Card layout (17 designs)",
+              if (Locale.getDefault().language == "ar") "تصميم البطاقة (20 تصميماً)" else "Card layout (20 designs)",
               style = MaterialTheme.typography.titleSmall,
               fontWeight = FontWeight.SemiBold,
             )
@@ -257,7 +258,7 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
               )
-              (0..23).toList().chunked(2).forEach { pair ->
+              FolderIconStyleCatalog.selectableIds.chunked(2).forEach { pair ->
                 Row(
                   modifier = Modifier.fillMaxWidth(),
                   horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -560,12 +561,16 @@ private fun CardAccentPreviewCard(
     Box(
       modifier = Modifier
         .fillMaxWidth()
-        .height(if (isFolder) 116.dp else 190.dp)
-        .clip(shape),
+        .height(if (isFolder) 116.dp else 190.dp),
     ) {
       Box(
         modifier = Modifier
           .fillMaxSize()
+          .cardLayoutStyle(
+            styleId = layoutStyleId,
+            opacity = opacity,
+            shape = shape,
+          )
           .cardAccentDecoration(
             style = style,
             opacity = opacity,
