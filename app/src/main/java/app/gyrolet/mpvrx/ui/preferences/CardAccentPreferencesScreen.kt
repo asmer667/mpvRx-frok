@@ -400,6 +400,11 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
                 preferences.randomFolderCardLayout.set(randomFolder)
                 preferences.randomVideoCardLayout.set(randomVideo)
                 preferences.randomEpisodeCardLayout.set(randomEpisode)
+                app.gyrolet.mpvrx.presentation.components.CardLayoutStyleRuntime.randomize(
+                  folder = randomFolder,
+                  video = randomVideo,
+                  episode = randomEpisode,
+                )
                 preferences.videoCardStyle.set(videoStyleId)
                 preferences.episodeCardStyle.set(episodeStyleId)
                 preferences.folderCardOpacity.set(folderOpacity)

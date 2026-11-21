@@ -65,6 +65,7 @@ import app.gyrolet.mpvrx.preferences.VideoSwipeAction
 import app.gyrolet.mpvrx.presentation.components.RemoteImage
 import app.gyrolet.mpvrx.presentation.components.CardAccentStyle
 import app.gyrolet.mpvrx.presentation.components.cardAccentDecoration
+import app.gyrolet.mpvrx.presentation.components.cardLayoutShape
 import app.gyrolet.mpvrx.presentation.components.cardLayoutStyle
 import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.ui.icons.Icon
@@ -361,7 +362,14 @@ fun VideoCard(
   // Repository memory remains the source of truth for new requests.
   var retainedThumbnail by remember(video.path, video.dateModified, video.size, thumbnailGenerator, thumbnailCacheRevision) { mutableStateOf<Bitmap?>(null) }
 
-  val cardShape = rememberMediaSelectionShape(isSelected, isGridMode, selectionNeighbors)
+  val cardLayoutStyleId = if (isEpisodeFile) {
+    resolvedUiConfig.episodeCardLayoutStyleId
+  } else {
+    resolvedUiConfig.videoCardLayoutStyleId
+  }
+  val selectionShape = rememberMediaSelectionShape(isSelected, isGridMode, selectionNeighbors)
+  val cardShape = if (isSelected) selectionShape
+    else cardLayoutShape(cardLayoutStyleId, selectionShape)
 
   VideoSwipeSurface(
     identity = video.path,
@@ -404,8 +412,7 @@ fun VideoCard(
         modifier = Modifier
           .matchParentSize()
           .cardLayoutStyle(
-            styleId = if (isEpisodeFile) resolvedUiConfig.episodeCardLayoutStyleId
-              else resolvedUiConfig.videoCardLayoutStyleId,
+            styleId = cardLayoutStyleId,
             opacity = cardAccentOpacity,
             shape = cardShape,
           ),

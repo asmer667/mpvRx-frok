@@ -66,47 +66,161 @@ enum class CardLayoutStyle(val id: Int, val nameAr: String, val nameEn: String) 
 }
 
 private fun layoutPath(id: Int, w: Float, h: Float): Path = Path().apply {
+  val s = minOf(w, h).coerceAtLeast(1f)
+  val r = s * .10f
+  val cut = s * .14f
+  val small = s * .06f
+
   when (id) {
-    1 -> { moveTo(18f, 0f); lineTo(w-18f,0f); quadraticTo(w,0f,w,h*.22f); lineTo(w,h*.78f); quadraticTo(w,h,w-18f,h); lineTo(18f,h); quadraticTo(0f,h,0f,h*.78f); lineTo(0f,18f); quadraticTo(0f,0f,18f,0f); close() }
-    2 -> { moveTo(18f,0f); lineTo(w-28f,0f); lineTo(w,h*.18f); lineTo(w,h-18f); lineTo(w-18f,h); lineTo(18f,h); lineTo(0f,h-18f); lineTo(0f,18f); close() }
-    3 -> { moveTo(0f,18f); quadraticTo(0f,0f,18f,0f); lineTo(w*.70f,0f); lineTo(w*.70f,h); lineTo(18f,h); quadraticTo(0f,h,0f,h-18f); close() }
-    4 -> { moveTo(18f,0f); lineTo(w-18f,0f); quadraticTo(w,0f,w,18f); lineTo(w,h-18f); quadraticTo(w,h,w-18f,h); lineTo(18f,h); quadraticTo(0f,h,0f,h-18f); lineTo(0f,18f); quadraticTo(0f,0f,18f,0f); close() }
-    5 -> { moveTo(0f,18f); lineTo(w*.12f,0f); lineTo(w*.82f,0f); lineTo(w,h*.20f); lineTo(w,h*.80f); lineTo(w*.84f,h); lineTo(w*.12f,h); lineTo(0f,h*.82f); close() }
-    6 -> { moveTo(18f,0f); lineTo(w-18f,0f); quadraticTo(w,0f,w,18f); lineTo(w,h-26f); quadraticTo(w,h,w-26f,h); lineTo(24f,h); quadraticTo(0f,h,0f,h-24f); lineTo(0f,18f); quadraticTo(0f,0f,18f,0f); close() }
-    8 -> { moveTo(0f,0f); lineTo(w-24f,0f); lineTo(w,h*.28f); lineTo(w-18f,h); lineTo(0f,h); close() }
-    9 -> { moveTo(12f,0f); lineTo(w*.42f,0f); lineTo(w*.48f,10f); lineTo(w-14f,10f); quadraticTo(w,10f,w,24f); lineTo(w,h-14f); quadraticTo(w,h,w-14f,h); lineTo(14f,h); quadraticTo(0f,h,0f,h-14f); lineTo(0f,14f); quadraticTo(0f,0f,12f,0f); close() }
-    11 -> { moveTo(16f,0f); lineTo(w-16f,0f); lineTo(w,h-14f); for (i in 10 downTo 0) { val x=w*i/10f; lineTo(x,h-(if(i%2==0) 2f else 13f)) }; lineTo(0f,16f); quadraticTo(0f,0f,16f,0f); close() }
-    13 -> { moveTo(18f,0f); lineTo(w-18f,0f); quadraticTo(w,0f,w,18f); lineTo(w,h-18f); quadraticTo(w,h,w-18f,h); lineTo(18f,h); quadraticTo(0f,h,0f,h-18f); lineTo(0f,18f); quadraticTo(0f,0f,18f,0f); close() }
-    14 -> { moveTo(34f,0f); lineTo(w-12f,0f); quadraticTo(w,0f,w,12f); lineTo(w,h-34f); lineTo(w-34f,h); lineTo(12f,h); quadraticTo(0f,h,0f,h-12f); lineTo(0f,34f); close() }
-    17 -> { moveTo(18f,0f); lineTo(w-18f,0f); quadraticTo(w,0f,w,18f); lineTo(w,h-18f); quadraticTo(w,h,w-18f,h); lineTo(18f,h); quadraticTo(0f,h,0f,h-18f); lineTo(0f,18f); quadraticTo(0f,0f,18f,0f); close() }
-    18 -> { moveTo(0f,0f); lineTo(w-28f,0f); lineTo(w,h*.20f); lineTo(w,h); lineTo(0f,h); close() }
-    19 -> { moveTo(24f,0f); cubicTo(w*.25f,h*.12f,w*.72f,-h*.08f,w-18f,10f); cubicTo(w+10f,h*.25f,w-8f,h*.75f,w-18f,h-10f); cubicTo(w*.65f,h*1.08f,w*.28f,h*.88f,18f,h); cubicTo(-10f,h*.72f,10f,h*.28f,24f,0f); close() }
-    20 -> { moveTo(20f,0f); lineTo(w*.82f,0f); lineTo(w,h*.22f); lineTo(w*.88f,h); lineTo(w*.12f,h); lineTo(0f,h*.78f); close() }
-    21 -> { moveTo(16f,0f); cubicTo(w*.28f,h*.20f,w*.66f,-h*.12f,w-16f,h*.18f); cubicTo(w*.82f,h*.50f,w*.35f,h*.48f,0f,h*.82f); lineTo(0f,h*.20f); close() }
-    22 -> { moveTo(18f,0f); lineTo(w-18f,0f); quadraticTo(w,0f,w,h*.18f); lineTo(w,h*.82f); quadraticTo(w,h,w-18f,h); lineTo(18f,h); quadraticTo(0f,h,0f,h*.82f); lineTo(0f,h*.18f); quadraticTo(0f,0f,18f,0f); close() }
-    23 -> { moveTo(12f,0f); lineTo(w-12f,0f); lineTo(w,h*.12f); lineTo(w,h*.88f); lineTo(w-12f,h); lineTo(12f,h); lineTo(0f,h*.88f); lineTo(0f,h*.12f); close() }
-    24 -> { moveTo(h*.48f,0f); lineTo(w-h*.48f,0f); cubicTo(w,h*.0f,w,h,w-h*.48f,h); lineTo(h*.48f,h); cubicTo(0f,h,0f,0f,h*.48f,0f); close() }
-    25 -> { moveTo(0f,0f); lineTo(w*.82f,0f); lineTo(w,h*.18f); lineTo(w*.84f,h*.36f); lineTo(w,h*.54f); lineTo(w*.82f,h); lineTo(0f,h); close() }
-    26 -> { moveTo(w*.18f,0f); lineTo(w*.82f,0f); lineTo(w,h*.50f); lineTo(w*.82f,h); lineTo(w*.18f,h); lineTo(0f,h*.50f); close() }
-    27 -> { moveTo(0f,12f); cubicTo(w*.22f,-h*.05f,w*.30f,h*.20f,w*.52f,h*.12f); cubicTo(w*.74f,h*.02f,w*.82f,h*.22f,w,12f); lineTo(w,h-12f); cubicTo(w*.78f,h*.08f,w*.70f,h*.82f,w*.48f,h*.90f); cubicTo(w*.26f,h*.98f,w*.18f,h*.78f,0f,h-12f); close() }
-    28 -> { moveTo(16f,0f); lineTo(w-16f,0f); lineTo(w,h*.18f); lineTo(w,h*.82f); lineTo(w-16f,h); lineTo(16f,h); lineTo(0f,h*.82f); lineTo(0f,h*.18f); close() }
-    29 -> { moveTo(22f,0f); lineTo(w-22f,0f); quadraticTo(w,0f,w,22f); lineTo(w,h-22f); quadraticTo(w,h,w-22f,h); lineTo(22f,h); quadraticTo(0f,h,0f,h-22f); lineTo(0f,22f); quadraticTo(0f,0f,22f,0f); close() }
-    30 -> { moveTo(20f,0f); lineTo(w-20f,0f); lineTo(w,h*.18f); lineTo(w,h*.82f); lineTo(w-20f,h); lineTo(20f,h); lineTo(0f,h*.82f); lineTo(0f,h*.18f); close() }
-    31 -> { moveTo(20f,0f); lineTo(w-20f,0f); lineTo(w,h*.16f); lineTo(w,h*.84f); lineTo(w-20f,h); lineTo(20f,h); lineTo(0f,h*.84f); lineTo(0f,h*.16f); close() }
-    32 -> { moveTo(28f,0f); lineTo(w-28f,0f); lineTo(w,h*.28f); lineTo(w,h*.72f); lineTo(w-28f,h); lineTo(28f,h); lineTo(0f,h*.72f); lineTo(0f,h*.28f); close() }
-    33 -> { moveTo(18f,0f); lineTo(w-18f,0f); quadraticTo(w,0f,w,18f); lineTo(w,h-18f); quadraticTo(w,h,w-18f,h); lineTo(18f,h); quadraticTo(0f,h,0f,h-18f); lineTo(0f,18f); quadraticTo(0f,0f,18f,0f); close() }
-    34 -> { moveTo(18f,0f); lineTo(w-18f,0f); lineTo(w,h-18f); lineTo(18f,h); lineTo(0f,h-18f); lineTo(0f,18f); close() }
-    35 -> { moveTo(14f,0f); lineTo(w-14f,0f); lineTo(w,h-14f); lineTo(14f,h); lineTo(0f,h-14f); lineTo(0f,14f); close() }
-    36 -> { moveTo(20f,0f); lineTo(w-20f,0f); quadraticTo(w,0f,w,20f); lineTo(w,h-20f); quadraticTo(w,h,w-20f,h); lineTo(20f,h); quadraticTo(0f,h,0f,h-20f); lineTo(0f,20f); quadraticTo(0f,0f,20f,0f); close() }
-    37 -> { moveTo(0f,0f); lineTo(w*.82f,0f); lineTo(w,h*.18f); lineTo(w,h); lineTo(w*.18f,h); lineTo(0f,h*.82f); close() }
-    38 -> { moveTo(18f,0f); lineTo(w-18f,0f); quadraticTo(w,0f,w,18f); lineTo(w,h-18f); quadraticTo(w,h,w-18f,h); lineTo(18f,h); quadraticTo(0f,h,0f,h-18f); lineTo(0f,18f); quadraticTo(0f,0f,18f,0f); close() }
-    39 -> { moveTo(18f,0f); lineTo(w-18f,0f); quadraticTo(w,0f,w,18f); lineTo(w,h-18f); quadraticTo(w,h,w-18f,h); lineTo(18f,h); quadraticTo(0f,h,0f,h-18f); lineTo(0f,18f); quadraticTo(0f,0f,18f,0f); close() }
-    else -> { moveTo(18f,0f); lineTo(w-18f,0f); quadraticTo(w,0f,w,18f); lineTo(w,h-18f); quadraticTo(w,h,w-18f,h); lineTo(18f,h); quadraticTo(0f,h,0f,h-18f); lineTo(0f,18f); quadraticTo(0f,0f,18f,0f); close() }
+    1 -> {
+      moveTo(r, 0f); lineTo(w-r, 0f)
+      quadraticTo(w, 0f, w, r)
+      lineTo(w, h-r); quadraticTo(w, h, w-r, h)
+      lineTo(r, h); quadraticTo(0f, h, 0f, h-r)
+      lineTo(0f, r); quadraticTo(0f, 0f, r, 0f); close()
+    }
+    2 -> {
+      moveTo(r, 0f); lineTo(w-cut, 0f)
+      lineTo(w, cut); lineTo(w, h-r)
+      lineTo(w-r, h); lineTo(r, h)
+      lineTo(0f, h-r); lineTo(0f, r); close()
+    }
+    3 -> {
+      moveTo(0f, r); quadraticTo(0f, 0f, r, 0f)
+      lineTo(w*.70f, 0f); lineTo(w*.70f, h)
+      lineTo(r, h); quadraticTo(0f, h, 0f, h-r); close()
+    }
+    4 -> {
+      moveTo(r, 0f); lineTo(w-r, 0f)
+      quadraticTo(w, 0f, w, r); lineTo(w, h-r)
+      quadraticTo(w, h, w-r, h); lineTo(r, h)
+      quadraticTo(0f, h, 0f, h-r); lineTo(0f, r)
+      quadraticTo(0f, 0f, r, 0f); close()
+    }
+    5 -> {
+      moveTo(0f, cut); lineTo(cut, 0f)
+      lineTo(w-cut, 0f); lineTo(w, cut)
+      lineTo(w, h-cut); lineTo(w-cut, h)
+      lineTo(cut, h); lineTo(0f, h-cut); close()
+    }
+    6 -> {
+      moveTo(r, 0f); lineTo(w-r, 0f)
+      quadraticTo(w, 0f, w, r); lineTo(w, h-cut)
+      quadraticTo(w, h, w-cut, h); lineTo(r, h)
+      quadraticTo(0f, h, 0f, h-r); lineTo(0f, r)
+      quadraticTo(0f, 0f, r, 0f); close()
+    }
+    8 -> {
+      moveTo(0f, 0f); lineTo(w-cut, 0f)
+      lineTo(w, h*.28f); lineTo(w-cut*.65f, h)
+      lineTo(0f, h); close()
+    }
+    9 -> {
+      moveTo(small, 0f); lineTo(w*.42f, 0f)
+      lineTo(w*.48f, small); lineTo(w-r, small)
+      quadraticTo(w, small, w, r); lineTo(w, h-r)
+      quadraticTo(w, h, w-r, h); lineTo(r, h)
+      quadraticTo(0f, h, 0f, h-r); lineTo(0f, r)
+      quadraticTo(0f, 0f, small, 0f); close()
+    }
+    11 -> {
+      moveTo(r, 0f); lineTo(w-r, 0f); lineTo(w, h-small)
+      for (i in 10 downTo 0) {
+        val x = w * i / 10f
+        lineTo(x, h - if (i % 2 == 0) small*.15f else small)
+      }
+      lineTo(0f, r); quadraticTo(0f, 0f, r, 0f); close()
+    }
+    14 -> {
+      moveTo(cut, 0f); lineTo(w-small, 0f)
+      quadraticTo(w, 0f, w, small); lineTo(w, h-cut)
+      lineTo(w-cut, h); lineTo(small, h)
+      quadraticTo(0f, h, 0f, h-small); lineTo(0f, cut); close()
+    }
+    18 -> {
+      moveTo(0f, 0f); lineTo(w-cut, 0f)
+      lineTo(w, cut); lineTo(w, h); lineTo(0f, h); close()
+    }
+    19 -> {
+      moveTo(r, 0f)
+      cubicTo(w*.28f, h*.10f, w*.70f, 0f, w-r, small)
+      cubicTo(w, h*.24f, w, h*.76f, w-r, h-small)
+      cubicTo(w*.70f, h, w*.28f, h*.90f, r, h)
+      cubicTo(0f, h*.76f, 0f, h*.24f, r, 0f); close()
+    }
+    20 -> {
+      moveTo(cut, 0f); lineTo(w-cut, 0f)
+      lineTo(w, h*.22f); lineTo(w-cut*.8f, h)
+      lineTo(cut*.8f, h); lineTo(0f, h*.78f); close()
+    }
+    23, 28, 30, 31, 35 -> {
+      val c = when (id) {
+        23 -> s*.08f
+        28 -> s*.11f
+        30 -> s*.13f
+        31 -> s*.10f
+        else -> s*.07f
+      }
+      moveTo(c, 0f); lineTo(w-c, 0f)
+      lineTo(w, h*.16f); lineTo(w, h*.84f)
+      lineTo(w-c, h); lineTo(c, h)
+      lineTo(0f, h*.84f); lineTo(0f, h*.16f); close()
+    }
+    24 -> {
+      val cr = s * .5f
+      moveTo(cr, 0f); lineTo(w-cr, 0f)
+      quadraticTo(w, 0f, w, cr)
+      lineTo(w, h-cr); quadraticTo(w, h, w-cr, h)
+      lineTo(cr, h); quadraticTo(0f, h, 0f, h-cr)
+      lineTo(0f, cr); quadraticTo(0f, 0f, cr, 0f); close()
+    }
+    25 -> {
+      moveTo(0f, 0f); lineTo(w*.78f, 0f)
+      lineTo(w, h*.18f); lineTo(w*.84f, h*.36f)
+      lineTo(w, h*.54f); lineTo(w*.78f, h)
+      lineTo(0f, h); close()
+    }
+    26 -> {
+      moveTo(w*.18f, 0f); lineTo(w*.82f, 0f)
+      lineTo(w, h*.5f); lineTo(w*.82f, h)
+      lineTo(w*.18f, h); lineTo(0f, h*.5f); close()
+    }
+    27 -> {
+      moveTo(0f, small)
+      cubicTo(w*.22f, 0f, w*.30f, h*.16f, w*.52f, h*.12f)
+      cubicTo(w*.74f, h*.02f, w*.82f, h*.18f, w, small)
+      lineTo(w, h-small)
+      cubicTo(w*.78f, h, w*.70f, h*.84f, w*.48f, h*.88f)
+      cubicTo(w*.26f, h*.98f, w*.18f, h*.82f, 0f, h-small)
+      close()
+    }
+    37 -> {
+      moveTo(0f, 0f); lineTo(w*.82f, 0f)
+      lineTo(w, h*.18f); lineTo(w, h)
+      lineTo(w*.18f, h); lineTo(0f, h*.82f); close()
+    }
+    else -> {
+      moveTo(r, 0f); lineTo(w-r, 0f)
+      quadraticTo(w, 0f, w, r); lineTo(w, h-r)
+      quadraticTo(w, h, w-r, h); lineTo(r, h)
+      quadraticTo(0f, h, 0f, h-r); lineTo(0f, r)
+      quadraticTo(0f, 0f, r, 0f); close()
+    }
   }
 }
 
 private fun layoutShape(id: Int): Shape = GenericShape { size, _ ->
   addPath(layoutPath(id, size.width, size.height))
+}
+
+fun cardLayoutShape(styleId: Int, fallback: Shape): Shape {
+  val id = CardLayoutStyle.fromId(styleId).id
+  val hasCustomShape = when (id) {
+    1, 2, 3, 4, 5, 6, 8, 9, 11, 14, 18, 19, 20,
+    23, 24, 25, 26, 27, 28, 30, 31, 35, 37 -> true
+    else -> false
+  }
+  return if (hasCustomShape) layoutShape(id) else fallback
 }
 
 fun Modifier.cardLayoutStyle(
@@ -150,12 +264,7 @@ fun Modifier.cardLayoutStyle(
     CardLayoutStyle.SPECTRUM_RAIL -> listOf(Color(0xFF20D9FF), Color(0xFF7C4DFF), Color(0xFFFF4E9B), Color(0xFFFFC857))
     else -> listOf(Color(0xFF00E5FF), Color(0xFF536DFE))
   }
-  val shapeForStyle = if (style == CardLayoutStyle.GLASS || style == CardLayoutStyle.TORN_PAPER ||
-    style == CardLayoutStyle.NEON_3D || style == CardLayoutStyle.BOTTOM_TAB ||
-    style == CardLayoutStyle.AQUA_SPLIT || style == CardLayoutStyle.FLAT_ORANGE ||
-    style == CardLayoutStyle.SPORT || style == CardLayoutStyle.FOLDER_TAB ||
-    style == CardLayoutStyle.ASYMMETRIC || style == CardLayoutStyle.PAPER_FOLD ||
-    style == CardLayoutStyle.LIQUID_GLASS) layoutShape(style.id) else shape
+  val shapeForStyle = cardLayoutShape(styleId, shape)
 
   return clip(shapeForStyle).drawBehind {
     val w = size.width
@@ -167,7 +276,7 @@ fun Modifier.cardLayoutStyle(
       androidx.compose.ui.graphics.Paint().apply { this.alpha = alpha })
     drawPath(p, dark)
     when (style) {
-      CardLayoutStyle.GLOWING_EDGES, CardLayoutStyle.PINK_NEON -> {
+      CardLayoutStyle.GLOWING_EDGES -> {
         drawPath(p, gradient, style = Stroke(3.5.dp.toPx()))
         drawPath(p, colors.first().copy(alpha = .12f))
         drawPath(p, colors.first().copy(alpha = .75f), style = Stroke(1.dp.toPx()))

@@ -58,6 +58,7 @@ import app.gyrolet.mpvrx.domain.archive.ZipArchiveMedia
 import app.gyrolet.mpvrx.domain.media.model.VideoFolder
 import app.gyrolet.mpvrx.domain.thumbnail.ThumbnailRepository
 import app.gyrolet.mpvrx.presentation.components.cardAccentDecoration
+import app.gyrolet.mpvrx.presentation.components.cardLayoutShape
 import app.gyrolet.mpvrx.presentation.components.cardLayoutStyle
 import app.gyrolet.mpvrx.preferences.AppearancePreferences
 import app.gyrolet.mpvrx.preferences.BrowserPageViewPreferences
@@ -311,7 +312,10 @@ fun FolderCard(
     }
   }
 
-  val cardShape = rememberMediaSelectionShape(isSelected, isGridMode, selectionNeighbors)
+  val cardLayoutStyleId = resolvedUiConfig.cardLayoutStyleId
+  val selectionShape = rememberMediaSelectionShape(isSelected, isGridMode, selectionNeighbors)
+  val cardShape = if (isSelected) selectionShape
+    else cardLayoutShape(cardLayoutStyleId, selectionShape)
   // Derive row height from actual measured labels and chips instead of a fixed footer.
 
   // Scoped document-tree folders can be swiped for playback, playlists and watched state,
@@ -358,7 +362,7 @@ fun FolderCard(
         modifier = Modifier
           .matchParentSize()
           .cardLayoutStyle(
-            styleId = resolvedUiConfig.cardLayoutStyleId,
+            styleId = cardLayoutStyleId,
             opacity = cardAccentOpacity,
             shape = cardShape,
           ),
