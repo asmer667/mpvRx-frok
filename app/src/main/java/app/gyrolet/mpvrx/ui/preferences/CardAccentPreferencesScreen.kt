@@ -79,9 +79,9 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
 
     var folderStyleId by rememberSaveable { mutableStateOf(savedFolderStyle) }
     var folderIconStyleId by rememberSaveable { mutableStateOf(savedFolderIconStyle.coerceIn(0, 23)) }
-    var folderLayoutId by rememberSaveable { mutableStateOf(savedFolderLayout.coerceIn(0, 19)) }
-    var videoLayoutId by rememberSaveable { mutableStateOf(savedVideoLayout.coerceIn(0, 19)) }
-    var episodeLayoutId by rememberSaveable { mutableStateOf(savedEpisodeLayout.coerceIn(0, 19)) }
+    var folderLayoutId by rememberSaveable { mutableStateOf(savedFolderLayout.coerceIn(0, 39)) }
+    var videoLayoutId by rememberSaveable { mutableStateOf(savedVideoLayout.coerceIn(0, 39)) }
+    var episodeLayoutId by rememberSaveable { mutableStateOf(savedEpisodeLayout.coerceIn(0, 39)) }
     var randomFolder by rememberSaveable { mutableStateOf(savedRandomFolder) }
     var randomVideo by rememberSaveable { mutableStateOf(savedRandomVideo) }
     var randomEpisode by rememberSaveable { mutableStateOf(savedRandomEpisode) }
@@ -188,8 +188,33 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
               )
             }
 
+            if (selectedType == 0) {
+              Text(
+                if (Locale.getDefault().language == "ar") "شكل أيقونة المجلد" else "Folder icon shape",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+              )
+              FolderIconStyleCatalog.selectableIds.chunked(2).forEach { pair ->
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                  pair.forEach { id ->
+                    FolderIconStyleChoice(
+                      styleId = id,
+                      selected = folderIconStyleId == id,
+                      modifier = Modifier.weight(1f),
+                      onClick = { folderIconStyleId = id },
+                    )
+                  }
+                  if (pair.size == 1) Spacer(Modifier.weight(1f))
+                }
+              }
+            }
+
+
             Text(
-              if (Locale.getDefault().language == "ar") "تصميم البطاقة (20 تصميماً)" else "Card layout (20 designs)",
+              if (Locale.getDefault().language == "ar") "تصميم البطاقة (40 تصميماً)" else "Card layout (40 designs)",
               style = MaterialTheme.typography.titleSmall,
               fontWeight = FontWeight.SemiBold,
             )
@@ -214,10 +239,42 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
                   ) {
                     Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                       Box(
-                        Modifier.fillMaxWidth().height(38.dp)
-                          .clip(RoundedCornerShape(8.dp))
-                          .cardLayoutStyle(design.id, 1f, RoundedCornerShape(8.dp)),
-                      )
+                        Modifier.fillMaxWidth().height(54.dp)
+                          .clip(RoundedCornerShape(9.dp))
+                          .cardLayoutStyle(design.id, 1f, RoundedCornerShape(9.dp)),
+                        contentAlignment = Alignment.Center,
+                      ) {
+                        if (selectedType == 0) {
+                          Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                          ) {
+                            FolderStyleIcon(
+                              styleId = folderIconStyleId,
+                              contentDescription = null,
+                              modifier = Modifier.size(24.dp),
+                              tint = Color.White,
+                            )
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                              Box(Modifier.width(62.dp).height(4.dp).clip(RoundedCornerShape(4.dp)).background(Color.White.copy(alpha = .72f)))
+                              Box(Modifier.width(42.dp).height(3.dp).clip(RoundedCornerShape(4.dp)).background(Color.White.copy(alpha = .34f)))
+                            }
+                          }
+                        } else {
+                          Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                          ) {
+                            Text("▶", color = Color.White, style = MaterialTheme.typography.titleMedium)
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                              Box(Modifier.fillMaxWidth(.78f).height(4.dp).clip(RoundedCornerShape(4.dp)).background(Color.White.copy(alpha = .72f)))
+                              Box(Modifier.fillMaxWidth(.48f).height(3.dp).clip(RoundedCornerShape(4.dp)).background(Color.White.copy(alpha = .34f)))
+                            }
+                          }
+                        }
+                      }
                       Text(
                         if (Locale.getDefault().language == "ar") design.nameAr else design.nameEn,
                         style = MaterialTheme.typography.labelSmall,
@@ -252,29 +309,6 @@ object CardAccentPreferencesScreen : ScrollableSettingsScreen {
               )
             }
 
-            if (selectedType == 0) {
-              Text(
-                if (Locale.getDefault().language == "ar") "شكل أيقونة المجلد" else "Folder icon shape",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-              )
-              FolderIconStyleCatalog.selectableIds.chunked(2).forEach { pair ->
-                Row(
-                  modifier = Modifier.fillMaxWidth(),
-                  horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                  pair.forEach { id ->
-                    FolderIconStyleChoice(
-                      styleId = id,
-                      selected = folderIconStyleId == id,
-                      modifier = Modifier.weight(1f),
-                      onClick = { folderIconStyleId = id },
-                    )
-                  }
-                  if (pair.size == 1) Spacer(Modifier.weight(1f))
-                }
-              }
-            }
 
             Text(
               stringResource(R.string.pref_card_customization_style),

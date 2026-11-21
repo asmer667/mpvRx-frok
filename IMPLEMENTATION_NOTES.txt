@@ -1,14 +1,46 @@
-mpvRx visual redesign - source update
+mpvRx visual customization update
+=================================
 
-Phase 1 - folder icons:
-- Adds a central catalog of exactly 20 selectable vector icon IDs.
-- Keeps legacy renderer IDs 16..19 supported for existing saved settings.
-- Uses the existing actual Canvas/Path vector artwork, including flowing wave, vintage phone, paper clipping and geometric collage.
+Reference mapping
+-----------------
+- pro1: customization screen layout: preview first, three category tabs, a two-column card-style gallery, and persistent Apply/Cancel actions at the bottom.
+- pro2: folder-icon selection and visual-style gallery arrangement.
+- pro3: the independent folder-icon catalog.
 
-Phase 2 - card layouts:
-- Expands the card layout engine to 20 distinct designs (IDs 0..19).
-- Adds camera lens, folded paper cutout and liquid glass designs.
-- Uses distinct clipping paths/silhouettes and individually drawn surface structures, not just palette changes.
-- Updates preview, settings range, labels and independent random selection to cover 20 designs.
+Implemented in this patch
+-------------------------
+1. Card layout catalog expanded from 20 to 40 independently drawn Compose Canvas styles.
+   - Existing IDs 0..19 are preserved for saved preferences and compatibility.
+   - New IDs 20..39 add Prism Edge, Aurora Ribbon, Double Orbit, Hologram Scan,
+     Frosted Capsule, Ribbon Fold, Hexagon Frame, Wave Cut, Circuit Trace,
+     Soft Clay, Chrome Bezel, Neon Rails, Corner Brackets, Gradient Mesh,
+     Paper Stack, Pixel Mosaic, Arc Halo, Diagonal Glass, Velvet Inset,
+     and Spectrum Rail.
+   - New designs have individual vector paths and/or dedicated Canvas geometry,
+     not just alternate color palettes.
+2. Random card-layout selection now covers IDs 0..39 independently for folders,
+   videos, and episodes.
+3. Customization screen shows the folder icon catalog before the card-layout
+   gallery when the Folder tab is active, following the pro1/pro2 information order.
+4. Card-layout previews now contain miniature folder/video content so the frame
+   geometry is judged with visible content, not as empty colored strips.
+5. Folder icon styles remain independent from card layout styles. Existing
+   selectable folder-icon IDs are preserved (0..15 and 20..23); legacy IDs 16..19
+   remain supported by the renderer.
+6. Apply/Cancel actions and existing per-category accent, opacity, and random
+   preferences are retained.
 
-Replace these files at the same relative paths in the project. No local Gradle build was run; run the build with GitHub Actions after applying.
+Files in this patch
+-------------------
+- app/src/main/java/app/gyrolet/mpvrx/presentation/components/CardLayoutStyles.kt
+- app/src/main/java/app/gyrolet/mpvrx/presentation/components/CardLayoutStyleRuntime.kt
+- app/src/main/java/app/gyrolet/mpvrx/ui/browser/cards/FolderIconStyle.kt
+- app/src/main/java/app/gyrolet/mpvrx/ui/preferences/CardAccentPreferencesScreen.kt
+
+Validation
+----------
+- Static catalog check: 40 unique card layout IDs (0..39).
+- Static renderer check: all new IDs 20..39 have dedicated drawing branches.
+- Static folder catalog check: 20 selectable folder icon styles.
+- No local Gradle build was run. Android compilation and runtime appearance still
+  require GitHub Actions / device verification.
