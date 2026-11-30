@@ -33,18 +33,6 @@ enum class VideoSwipeAction {
   ClearHistory,
 }
 
-internal val VideoSwipeAction.isAudioCompatible: Boolean
-  get() =
-    when (this) {
-      VideoSwipeAction.ToggleWatched,
-      VideoSwipeAction.MarkNew,
-      VideoSwipeAction.LastPlayed,
-      VideoSwipeAction.Finished,
-      VideoSwipeAction.ClearHistory,
-      -> false
-      else -> true
-    }
-
 class BrowserPreferences(
   preferenceStore: PreferenceStore,
   context: android.content.Context,
@@ -67,31 +55,8 @@ class BrowserPreferences(
   val videoSortOrder = preferenceStore.getEnum("video_sort_order", SortOrder.Ascending)
   val videoSwipeRight = preferenceStore.getEnum("video_swipe_right", VideoSwipeAction.ToggleWatched)
   val videoSwipeLeft = preferenceStore.getEnum("video_swipe_left", VideoSwipeAction.AddToPlaylist)
-  val videoSwipeRightZonePercent =
-    preferenceStore.getInt(
-      "video_swipe_right_zone_percent",
-      DEFAULT_VIDEO_SWIPE_ZONE_PERCENT,
-    )
-  val videoSwipeLeftZonePercent =
-    preferenceStore.getInt(
-      "video_swipe_left_zone_percent",
-      DEFAULT_VIDEO_SWIPE_ZONE_PERCENT,
-    )
-
-  // Audio rows reuse the video swipe actions unless the user separates them.
-  val separateAudioSwipeActions = preferenceStore.getBoolean("separate_audio_swipe_actions", false)
-  val audioSwipeRight = preferenceStore.getEnum("audio_swipe_right", VideoSwipeAction.None)
-  val audioSwipeLeft = preferenceStore.getEnum("audio_swipe_left", VideoSwipeAction.AddToPlaylist)
-  val audioSwipeRightZonePercent =
-    preferenceStore.getInt(
-      "audio_swipe_right_zone_percent",
-      DEFAULT_VIDEO_SWIPE_ZONE_PERCENT,
-    )
-  val audioSwipeLeftZonePercent =
-    preferenceStore.getInt(
-      "audio_swipe_left_zone_percent",
-      DEFAULT_VIDEO_SWIPE_ZONE_PERCENT,
-    )
+  val videoSwipeRightZonePercent = preferenceStore.getInt("video_swipe_right_zone_percent", DEFAULT_VIDEO_SWIPE_ZONE_PERCENT)
+  val videoSwipeLeftZonePercent = preferenceStore.getInt("video_swipe_left_zone_percent", DEFAULT_VIDEO_SWIPE_ZONE_PERCENT)
 
   val playlistSortType = preferenceStore.getEnum("playlist_sort_type", PlaylistSortType.Original)
   val playlistSortOrder = preferenceStore.getEnum("playlist_sort_order", SortOrder.Ascending)
@@ -99,7 +64,6 @@ class BrowserPreferences(
   val playlistItemSortOrder = preferenceStore.getEnum("playlist_item_sort_order", SortOrder.Ascending)
   val recentSortType = preferenceStore.getEnum("recent_sort_type", RecentSortType.LastPlayed)
   val recentSortOrder = preferenceStore.getEnum("recent_sort_order", SortOrder.Descending)
-
   // FR-09: the grid defaults to newest capture first.
   val snapshotSortType = preferenceStore.getEnum("snapshot_sort_type", SnapshotSortType.CapturedAt)
   val snapshotSortOrder = preferenceStore.getEnum("snapshot_sort_order", SortOrder.Descending)
@@ -121,14 +85,10 @@ class BrowserPreferences(
       inheritGlobalLayout = false,
     )
   val recentView = BrowserPageViewPreferences(preferenceStore, "recent", thumbnailsByDefault = !television)
-  val playlistView =
-    BrowserPageViewPreferences(
-      preferenceStore,
-      "playlist_library",
-      folderDefaults = true,
-      thumbnailsByDefault = true,
-      inheritGlobalThumbnails = false,
-    )
+  val playlistView = BrowserPageViewPreferences(
+    preferenceStore, "playlist_library", folderDefaults = true,
+    thumbnailsByDefault = true, inheritGlobalThumbnails = false,
+  )
   val playlistItemView =
     BrowserPageViewPreferences(preferenceStore, "playlist_item", thumbnailsByDefault = !television)
 
@@ -169,7 +129,6 @@ class BrowserPreferences(
   val videoGridColumnsDualPaneLandscape = preferenceStore.getInt("video_grid_columns_dual_pane_landscape", 0)
 
   val showExtensionField = preferenceStore.getBoolean("show_extension_field", false)
-
   // Off by default: files without a MediaStore duration are probed one by one to fill it.
   val showDurationField = preferenceStore.getBoolean("show_duration_field", false)
 
@@ -177,19 +136,11 @@ class BrowserPreferences(
   val showVideoThumbnails = preferenceStore.getBoolean("show_video_thumbnails", !television)
   val thumbnailGenerator = preferenceStore.getEnum("thumbnail_generator", ThumbnailGenerator.Auto)
   val thumbnailMode = preferenceStore.getEnum("thumbnail_mode", ThumbnailMode.Smart)
+  val thumbnailQuality = preferenceStore.getEnum("thumbnail_quality", ThumbnailQuality.High)
   val thumbnailFramePosition = preferenceStore.getFloat("thumbnail_frame_position", 33f)
 
-  /** Set once the thumbnails capped by the retired quality setting have been cleared. */
-  val thumbnailCacheUncapped = preferenceStore.getBoolean("thumbnail_cache_uncapped", false)
-
-  init {
-    // Thumbnails always use the top quality and every core; drop the retired settings.
-    listOf(
-      preferenceStore.getString("thumbnail_quality"),
-      preferenceStore.getInt("thumbnail_parallelism"),
-    ).filter { it.isSet() }.forEach { it.delete() }
-  }
-
+  /** Thumbnails generated at the same time; 0 means Auto (a safe value for this device). */
+  val thumbnailParallelism = preferenceStore.getInt("thumbnail_parallelism", 0)
   val showSizeChip = preferenceStore.getBoolean("show_size_chip", false)
 
   // Metadata-dependent chips (disabled by default for better performance)
@@ -215,6 +166,9 @@ class BrowserPreferences(
   val showTotalDurationChip = preferenceStore.getBoolean("show_total_duration_chip", false)
   val showTotalSizeChip = preferenceStore.getBoolean("show_total_size_chip", false)
   val showDateChip = preferenceStore.getBoolean("show_date_chip", false)
+  val showLastPlayedTime = preferenceStore.getBoolean("show_last_played_time", false)
+  // Material 3 card containers are opt-in; the default keeps the existing compact list look.
+  val showMediaCards = preferenceStore.getBoolean("show_media_cards", false)
   val showFolderPath = preferenceStore.getBoolean("show_folder_path", false)
   val showFolderThumbnails = preferenceStore.getBoolean("show_folder_thumbnails", false)
 
@@ -264,25 +218,19 @@ class BrowserPageViewPreferences internal constructor(
       preferenceStore.getEnum("${prefix}_layout_mode", defaultLayoutMode)
     }
   val manualGridColumnsEnabled = boolean("manual_grid_columns_enabled", false)
-  val gridColumnsPortrait =
-    integer(
-      "grid_columns_portrait",
-      0,
-      if (folderDefaults) "folder_grid_columns_portrait" else "video_grid_columns_portrait",
-    )
-  val gridColumnsLandscape =
-    integer(
-      "grid_columns_landscape",
-      0,
-      if (folderDefaults) "folder_grid_columns_landscape" else "video_grid_columns_landscape",
-    )
+  val gridColumnsPortrait = integer(
+    "grid_columns_portrait",
+    0,
+    if (folderDefaults) "folder_grid_columns_portrait" else "video_grid_columns_portrait",
+  )
+  val gridColumnsLandscape = integer(
+    "grid_columns_landscape",
+    0,
+    if (folderDefaults) "folder_grid_columns_landscape" else "video_grid_columns_landscape",
+  )
   val showThumbnails =
     if (inheritGlobalThumbnails) {
-      boolean(
-        "show_thumbnails",
-        thumbnailsByDefault,
-        if (folderDefaults) "show_folder_thumbnails" else "show_video_thumbnails",
-      )
+      boolean("show_thumbnails", thumbnailsByDefault, if (folderDefaults) "show_folder_thumbnails" else "show_video_thumbnails")
     } else {
       // Playlist covers start visible independently of the folder-thumbnail setting.
       preferenceStore.getBoolean("${prefix}_show_thumbnails", thumbnailsByDefault)
@@ -305,22 +253,12 @@ class BrowserPageViewPreferences internal constructor(
   val showStreamDetails = boolean("show_stream_details", true, "show_playlist_stream_details")
   val audioCoverArtSize = integer("audio_cover_art_size", 48, "music_cover_art_size")
 
-  private fun boolean(
-    key: String,
-    defaultValue: Boolean,
-    legacyKey: String = key,
-  ): Preference<Boolean> =
-    preferenceStore
-      .getBoolean("${prefix}_$key", defaultValue)
+  private fun boolean(key: String, defaultValue: Boolean, legacyKey: String = key): Preference<Boolean> =
+    preferenceStore.getBoolean("${prefix}_$key", defaultValue)
       .initializeFrom(preferenceStore.getBoolean(legacyKey, defaultValue))
 
-  private fun integer(
-    key: String,
-    defaultValue: Int,
-    legacyKey: String,
-  ): Preference<Int> =
-    preferenceStore
-      .getInt("${prefix}_$key", defaultValue)
+  private fun integer(key: String, defaultValue: Int, legacyKey: String): Preference<Int> =
+    preferenceStore.getInt("${prefix}_$key", defaultValue)
       .initializeFrom(preferenceStore.getInt(legacyKey, defaultValue))
 
   private fun <T> Preference<T>.initializeFrom(legacy: Preference<T>): Preference<T> =
@@ -529,4 +467,13 @@ enum class ThumbnailMode {
         FrameAtPosition -> "Frame position"
         EmbeddedThumbnail -> "Embedded thumbnail"
       }
+}
+
+enum class ThumbnailQuality(
+  val maxSizePx: Int,
+  val displayName: String,
+) {
+  Balanced(720, "Balanced (720p)"),
+  High(1080, "High (1080p)"),
+  Ultra(1440, "Ultra (1440p)"),
 }

@@ -1,6 +1,5 @@
 <resources>
-  <string name="player_switch_to_audio">Switch to audio player</string>
-  <string name="player_switch_to_video">Switch to video player</string>
+
   <string name="app_icon_create_custom_shortcut">Add exact custom icon to home screen</string>
   <string name="home_critics_choice">Critics\' Choice</string>
   <string name="home_critics_choice_subtitle">Top-rated by community reviews</string>
@@ -112,8 +111,15 @@
   <string name="pref_appearance_thumbnail_generation_summary">Choose embedded artwork or a video frame.</string>
   <string name="pref_appearance_thumbnail_generation_change_title">Change thumbnail strategy?</string>
   <string name="pref_appearance_thumbnail_generation_change_summary">Clear cached thumbnails and regenerate them as you browse?</string>
+  <string name="pref_appearance_thumbnail_quality_title">Thumbnail quality</string>
+  <string name="pref_appearance_thumbnail_quality_summary">Thumbnail limit: %1$d px. Larger images use more storage and processing.</string>
   <string name="pref_appearance_thumbnail_position_title">Thumbnail frame position</string>
   <string name="pref_appearance_thumbnail_position_summary">Capture the frame at %1$d%% of the video</string>
+  <string name="pref_appearance_thumbnail_parallelism_title">Thumbnail processing cores</string>
+  <string name="pref_appearance_thumbnail_parallelism_auto">Auto (%1$d of %2$d)</string>
+  <string name="pref_appearance_thumbnail_parallelism_value">%1$d of %2$d</string>
+  <string name="pref_appearance_thumbnail_parallelism_dialog_summary">More threads are faster but may increase memory use, battery drain and stutter. Auto is recommended.</string>
+  <string name="pref_appearance_thumbnail_parallelism_warning">Higher than the %1$d recommended for this device. Lower it if lists lag or the app is closed in the background.</string>
   <string name="pref_appearance_show_network_thumbnails_title">Show network thumbnails (Experimental)</string>
   <string name="pref_appearance_show_network_thumbnails_summary">Generate thumbnails for network streams (May increase data usage on mobile networks)</string>
   <string name="pref_nav_music_title">Show Music tab</string>
@@ -142,13 +148,13 @@
   <string name="video_action_mark_unwatched">Mark unwatched</string>
   <!-- Theme names -->
   <string name="theme_default">Default</string>
-  <string name="theme_classic">Classic</string>
   <string name="theme_dynamic">Dynamic</string>
   <string name="theme_aurora">Aurora</string>
   <string name="theme_cloudflare">Cloudflare</string>
   <string name="theme_cotton_candy">Cotton Candy</string>
   <string name="theme_doom">Doom</string>
   <string name="theme_green_apple">Green Apple</string>
+  <string name="theme_lavender">Lavender</string>
   <string name="theme_midnight">Midnight</string>
   <string name="theme_mocha">Mocha</string>
   <string name="theme_strawberry">Strawberry</string>
@@ -199,8 +205,13 @@
   <string name="save_queue_as_playlist">Save queue as playlist</string>
   <string name="pref_auto_pip_title">Auto Picture-in-Picture</string>
   <string name="pref_auto_pip_summary">Automatically enter PIP mode when pressing home or back</string>
-  <string name="pref_pip_on_back_title">Back enters picture-in-picture</string>
-  <string name="pref_pip_on_back_summary">Back shrinks the video into a floating window instead of closing it. Off: only Home enters PiP and Back closes the player.</string>
+  <string name="pref_auto_pip_home_only_title">PiP on home gesture only</string>
+  <string name="pref_auto_pip_home_only_summary">Only the home gesture or swipe enters PIP; the back button closes the player</string>
+  <string name="pref_enable_video_mini_player_title">Enable Video Mini Player</string>
+  <string name="pref_enable_video_mini_player_summary">Minimize video playback into a floating Mini Player when pressing Back</string>
+  <string name="pref_video_mini_player_dependency_title">Enable video background playback?</string>
+  <string name="pref_video_mini_player_dependency_message">Requires Video Player Background Playback.</string>
+  <string name="pref_video_mini_player_dependency_confirm">Enable and continue</string>
   <string name="pref_player_keep_screen_on_when_paused_title">Keep screen on when paused</string>
   <string name="pref_player_external_display_projection_title">External display projection</string>
   <string name="pref_player_external_display_projection_summary">Play on HDMI, USB-C or wireless displays with the phone screen off.</string>
@@ -255,9 +266,6 @@
   <string name="pref_player_orientation_reverse_landscape">Reverse landscape</string>
   <string name="pref_player_orientation_sensor_landscape">Sensor landscape</string>
   <string name="pref_player_save_position_on_quit">Save position on quit</string>
-  <string name="pref_player_watched_threshold_title">Watched threshold</string>
-  <string name="pref_player_watched_threshold_summary">Mark video as watched when playback reaches %d%%</string>
-  <string name="pref_player_watched_threshold_summary_never">Never mark videos as watched automatically</string>
   <string name="pref_player_resume_playback_title">Resume playback</string>
   <string name="pref_player_resume_mode_always">Always resume</string>
   <string name="pref_player_resume_mode_always_summary">Automatically resume from last saved position</string>
@@ -383,6 +391,9 @@
   <string name="pref_subtitles_font_directory_selected">Source: %1$s</string>
   <string name="pref_subtitles_font_no_custom">No custom fonts loaded</string>
   <string name="pref_subtitles_font_copy_failed">Could not load fonts: %1$s</string>
+  <string name="pref_subtitles_auto_download_fonts">Download missing fonts</string>
+  <string name="pref_subtitles_auto_download_fonts_summary">Adds a Google font when subtitles use a script or emoji this device can\'t show</string>
+  <string name="subtitle_font_added">Font added: %1$s</string>
   <string name="pref_subtitles_autoload_title">Automatically load subtitles</string>
   <string name="pref_subtitles_autoload_summary">Automatically find matching subtitles beside the video and up to two subfolders deep.</string>
   <string name="pref_subtitles_search_online">Online Subtitle Search…</string>
@@ -395,8 +406,6 @@
   <string name="pref_audio">Audio</string>
   <string name="pref_audio_summary">Ambient mode, visualizer style, audio channels, pitch correction</string>
   <string name="pref_audio_orientation_title">Audio player orientation</string>
-  <string name="pref_audio_dual_pane_for_tablet_title">Dual-pane music player on tablets</string>
-  <string name="pref_audio_dual_pane_for_tablet_summary">Show the queue and lyrics in a side panel beside the music player.</string>
   <string name="pref_audio_pitch_correction_title">Enable audio pitch correction</string>
   <string name="pref_audio_pitch_correction_summary">Keep the original pitch when playback speed changes.</string>
   <string name="pref_audio_volume_normalization_title">Volume normalization</string>
@@ -429,15 +438,6 @@
   <string name="pref_audio_preferred_language">Comma-separated language codes, e.g. en,eng,ja. Matched left to right.</string>
   <string name="pref_audio_volume_boost_cap">Volume boost cap</string>
   <string name="pref_audio_output_title">Audio output</string>
-  <string name="audio_output_current_device">Current media output</string>
-  <string name="audio_output_device_speakers">Device speakers</string>
-  <string name="audio_output_system_managed">Managed by Android</string>
-  <string name="audio_output_change_device">Change output device</string>
-  <string name="audio_output_android_picker">Choose a device with Android’s media output picker</string>
-  <string name="audio_output_android_settings">Manage connected devices in Android settings</string>
-  <string name="audio_output_picker_unavailable">Could not open Android’s audio output controls.</string>
-  <string name="audio_output_volume_unavailable">Android did not allow changing the media volume.</string>
-  <string name="audio_output_volume_fixed">Adjust volume on the output device.</string>
   <string name="pref_audio_output_auto">Auto</string>
   <string name="pref_audio_output_audiotrack">AudioTrack</string>
   <string name="pref_audio_output_aaudio">AAudio (low latency)</string>
@@ -627,9 +627,6 @@
   <string name="player_sheets_filters_sharpness">Sharpness</string>
   <string name="player_sheets_filters_warning">Some filters may not work on your current video driver</string>
   <string name="player_sheets_speed_make_default">Make default speed</string>
-  <string name="player_speed_decrease">Decrease playback speed</string>
-  <string name="player_speed_increase">Increase playback speed</string>
-  <string name="music_play_all">Play all</string>
   <string name="player_sheets_decoder_formatted" formatted="false">%s (%s)</string>
   <string name="numeric_chooser_value_too_big">Value too big</string>
   <string name="numeric_chooser_value_too_small">Value too small</string>
@@ -660,10 +657,6 @@
   <string name="timer_picker_enter_timer">Enter time</string>
   <string name="timer_title">Sleep timer</string>
   <string name="timer_remaining">%s remaining</string>
-  <string name="timer_one_hour_short">1 hr</string>
-  <string name="timer_custom">Custom</string>
-  <string name="timer_end_of_song">End of song</string>
-  <string name="timer_turn_off">Turn off timer</string>
   <string name="toast_sleep_timer_ended">Sleep timer ended</string>
   <string name="volume_slider_absolute_value" translatable="false">%d</string>
   <string name="github_repo_url" translatable="false">https://github.com/Riteshp2001/mpvRx</string>
@@ -684,13 +677,12 @@
   <!-- Background Playback -->
   <string name="pref_ignore_audio_focus_title">Ignore audio focus</string>
   <string name="pref_ignore_audio_focus_summary">Keep audio and video playing alongside other apps without pausing or lowering volume</string>
+  <string name="pref_audio_background_playback_title">Audio Player Background Playback</string>
+  <string name="toast_audio_background_playback_on">Audio background playback on</string>
+  <string name="toast_audio_background_playback_off">Audio background playback off</string>
+  <string name="pref_audio_background_playback_summary">Keep audio playing when leaving the audio player or turning off screen</string>
   <string name="pref_video_background_playback_title">Video Player Background Playback</string>
-  <string name="pref_video_background_playback_summary">Keep videos playing when you go Home, switch apps or turn off the screen. Long-press the background button in the player to do this once.</string>
-  <string name="pref_video_background_on_back_title">Back keeps the video playing</string>
-  <string name="pref_video_background_on_back_summary">Back returns to the list and the video keeps playing in the background, with controls in the notification. Off: Back closes the video.</string>
-  <string name="toast_background_playback_on">Background playback on</string>
-  <string name="toast_background_playback_off">Background playback off</string>
-  <string name="btn_label_background_playback_once">Play in the background once</string>
+  <string name="pref_video_background_playback_summary">Keep video audio playing when leaving the video player or turning off screen</string>
   <string name="deselect_all">Deselect All</string>
   <string name="select_all">Select All</string>
   <string name="invert_selection">Invert Selection</string>
@@ -761,7 +753,12 @@
   <string name="notification_add_to_favorites">Add to Favorites</string>
   <string name="notification_saved_to_favorites">Saved to Favorites</string>
   <string name="notification_close">Close</string>
+  <string name="notification_chapter_counter">Chapter %1$d of %2$d</string>
   <string name="notification_playback_progress">%1$s elapsed - %2$s remaining</string>
+  <string name="notification_permission_denied">Notification permission is required for background playback controls.</string>
+  <string name="notification_permission_disabled">Notifications are disabled for mpvRx. Enable them to show playback controls.</string>
+  <string name="notification_disabled_in_advanced_settings">Enable notifications in Advanced Settings to use background playback.</string>
+  <string name="pref_advanced_notification_style">Notification style</string>
   <!-- Media Info Activity -->
   <string name="pref_player_use_precise_seeking">Use precise seeking</string>
   <!-- Folders Preferences -->
@@ -938,7 +935,6 @@
   <string name="pref_custom_seek_label">Seconds</string>
   <string name="pref_double_tap_seek_area_width_summary">Current: %1$d%%</string>
   <string name="pref_custom_seek_summary_format">Custom (%1$ds)</string>
-  <string name="pref_tv_seek_duration_title">Remote seek duration</string>
 
   <!-- ═══════════════════════════════════════════════════════════ -->
   <!-- Player Controls Sections                                   -->
@@ -1248,9 +1244,6 @@
   <string name="pref_decoder_vulkan_experimental_title">Vulkan (Experimental)</string>
   <string name="hdr_mode_off">Off</string>
   <string name="hdr_mode_off_description">Normal SDR output</string>
-  <string name="hdr_mode_linear_passthrough">Linear Passthrough (hdr-toys)</string>
-  <string name="hdr_mode_linear_passthrough_short">Linear Passthrough</string>
-  <string name="hdr_mode_linear_passthrough_description">Sends HDR to this screen. hdr-toys Astra first tone maps each video to the peak brightness of the screen. Needs gpu-next with Vulkan.</string>
   <string name="hdr_mode_bt2100_pq" translatable="false">BT.2100 PQ</string>
   <string name="hdr_mode_pq_short" translatable="false">PQ</string>
   <string name="hdr_mode_bt2100_pq_description">HDR10-style PQ with Astra tone mapping and Bottosson gamut mapping</string>
@@ -1536,7 +1529,6 @@
   <string name="ui_unpin_videos">Unpin videos</string>
   <string name="ui_pinned_video">Pinned video</string>
   <string name="ui_folder">Folder</string>
-  <string name="ui_hidden_folder">Hidden folder (.nomedia)</string>
   <string name="ui_connect_automatically_on_app_launch">Connect automatically on app launch</string>
   <string name="ui_connecting">Connecting</string>
   <string name="ui_browse">Browse</string>
@@ -1609,6 +1601,7 @@
   <string name="ui_create_new_folder">Create New Folder</string>
   <string name="ui_folder_name">Folder name</string>
   <string name="ui_go_back">Go back</string>
+  <string name="ui_go_to_internal_storage">Go to internal storage</string>
   <string name="ui_create_folder">Create folder</string>
   <string name="ui_ai_is_thinking">AI is thinking...</string>
   <string name="ui_ai_rename">AI Rename</string>
@@ -1782,7 +1775,7 @@
   <string name="ui_file_permission_desc_playstore">Required to access and play media files stored on your device.</string>
   <string name="ui_file_permission_desc_all_files">Required to discover media and subtitle files on your device.</string>
   <string name="ui_notification_permission_title">Notifications</string>
-  <string name="ui_notification_permission_desc">Optional. Used for download progress and update alerts. Playback controls work without it.</string>
+  <string name="ui_notification_permission_desc">Optional. Required for media playback controls, background status, and update alerts.</string>
   <string name="ui_audio_record_permission_title">Record Audio</string>
   <string name="ui_audio_record_permission_desc">Optional. Lets audio visualizers read live sound levels.</string>
   <string name="ui_permission_granted">Granted</string>
@@ -1872,6 +1865,10 @@
   <string name="ui_auto_check_for_updates">Auto Check for Updates</string>
   <string name="ui_check_on_startup">Check on startup</string>
   <string name="ui_check_for_updates_now">Check for Updates Now</string>
+  <string name="ui_update_channel">Update Channel</string>
+  <string name="ui_update_channel_stable_short" translatable="false">Stable</string>
+  <string name="ui_update_channel_preview_short" translatable="false">Nightly</string>
+  <string name="ui_update_channels_summary">Stable releases, nightly previews, or experimental CI builds.</string>
   <string name="update_whats_new">What’s New</string>
   <string name="update_no_release_notes">No release notes provided.</string>
   <string name="update_ready_to_install">Ready to Install</string>
@@ -1881,6 +1878,9 @@
   <string name="update_size">Size</string>
   <string name="update_package">Package</string>
   <string name="update_unknown_size">Unknown size</string>
+  <string name="update_beta_build_format">Beta r%1$d</string>
+  <string name="ui_beta_badge_suffix">\u0020(Beta)</string>
+  <string name="ui_tester_badge_suffix">\u0020(Tester)</string>
   <string name="ui_core_open_source_dependencies_used_by_mpvrx">Core open source dependencies used by mpvRx.</string>
   <string name="ui_copy_upi_id">Copy UPI ID</string>
   <string name="ui_already_using_latest_version">Already using latest version</string>
@@ -2546,8 +2546,6 @@
   <string name="wallpaper_save_failed">Could not save the wallpaper. Please choose the image again.</string>
   <string name="pref_haptic_feedback_title">Haptic feedback</string>
   <string name="pref_haptic_feedback_summary">Feedback for selections, dragging and adjustments. Follows system settings.</string>
-  <string name="pref_main_page_swipes_title">Swipe between pages</string>
-  <string name="pref_main_page_swipes_summary">Swipe between main pages like Home, Music and Profile. Turn off to switch pages only with the navigation buttons.</string>
   <string name="pref_nested_tab_swipes_title">Swipe between inner tabs</string>
   <string name="pref_nested_tab_swipes_summary">Swipe between sub-tabs in Music, Network and Recents.</string>
 
@@ -2597,10 +2595,6 @@
   <string name="pref_video_swipe_change">Change</string>
   <string name="pref_video_swipe_zone_width">Swipe zone width</string>
   <string name="pref_video_swipe_zone_percent">Swipe zone: %1$d%%</string>
-  <string name="pref_video_swipe_separate_audio">Separate audio and video actions</string>
-  <string name="pref_video_swipe_separate_audio_summary">Use different swipe actions for audio and video items</string>
-  <string name="pref_video_swipe_target_video">Video</string>
-  <string name="pref_video_swipe_target_audio">Audio</string>
   <string name="video_swipe_delete_title">Delete videos?</string>
   <string name="video_swipe_delete_message">Permanently delete \"%1$s\"? This cannot be undone.</string>
   <string name="video_swipe_delete_folder_message">Permanently delete %1$d videos in \"%2$s\" and its subfolders? Other files and folders will be kept. This cannot be undone.</string>
@@ -2708,6 +2702,11 @@
   <string name="playlist_columns_portrait">Portrait columns</string>
   <string name="playlist_columns_landscape">Landscape columns</string>
   <string name="playlist_extension">File extension</string>
+  <string name="pref_background_playback_behavior">Background playback behavior</string>
+  <string name="pref_background_playback_remember">Always remember my choice</string>
+  <string name="pref_background_playback_remember_summary">Keep the background playback choice for future videos.</string>
+  <string name="pref_background_playback_per_video">Remember for each video</string>
+  <string name="pref_background_playback_per_video_summary">Remember background playback separately for each video.</string>
   <string name="jellyfin_technical_details">Technical details</string>
 
   <!-- Snapshots (frame capture) -->
@@ -2845,7 +2844,7 @@
   <string name="pref_gesture_show_seekbar_horizontal_title">Show seekbar when controls are hidden</string>
   <string name="pref_gesture_show_seekbar_horizontal_summary">Show the seekbar during swipe seeking, even with controls hidden.</string>
   <string name="network_server_no_matches">No matching addresses. You can still type one.</string>
-  <string name="network_server_none_found">No servers found. Check that both devices are on the same network, try again, or enter the address manually.</string>
+  <string name="network_server_none_found">No advertised servers found. Check that both devices are on the same network, try again, or enter the address manually.</string>
   <string name="network_server_saved">Saved address</string>
   <string name="network_server_nearby">Nearby server</string>
   <string name="network_server_this_device">This device on the local network</string>
@@ -2854,7 +2853,7 @@
   <string name="network_server_scan">Find nearby servers</string>
   <string name="network_server_scanning">Looking for nearby servers…</string>
   <string name="network_server_scan_unavailable">Discovery is unavailable or incomplete. Choose a saved address or type one.</string>
-  <string name="network_server_discovery_hint">Finds SMB, FTP, SFTP, WebDAV and DLNA servers on your network. Device addresses are shortcuts; enter credentials below.</string>
+  <string name="network_server_discovery_hint">Finds advertised LAN servers. Device addresses are shortcuts; enter credentials below.</string>
   <string name="network_smb_share_folder">Share / folder (optional)</string>
   <string name="network_dlna_description_path">Device description path</string>
   <string name="network_dlna_description_hint">Find a nearby DLNA server, or enter its device description URL and path.</string>
@@ -3028,12 +3027,50 @@
   <string name="delete_size_unknown">Size unknown</string>
   <string name="delete_size_description">Total size: %1$s</string>
 
+  <!-- Thumbnail information -->
+  <string name="media_info_tab_thumbnail">Thumbnail</string>
+  <string name="thumbnail_preview_description">Cached thumbnail for %1$s</string>
+  <string name="thumbnail_status_disk">Cached on disk</string>
+  <string name="thumbnail_status_memory">Cached in memory</string>
+  <string name="thumbnail_status_unreadable">Cached image could not be decoded</string>
+  <string name="thumbnail_status_missing">No cached thumbnail</string>
+  <string name="thumbnail_info_status">Cache status</string>
+  <string name="thumbnail_info_generator">Generator policy</string>
+  <string name="thumbnail_info_strategy">Frame or artwork selection</string>
+  <string name="thumbnail_strategy_artwork">Album artwork</string>
+  <string name="thumbnail_strategy_auto">MediaStore first, then Native fallback</string>
+  <string name="thumbnail_strategy_android">Android-selected frame</string>
+  <string name="thumbnail_info_quality">Configured quality</string>
+  <string name="thumbnail_info_maximum">Configured size limit</string>
+  <string name="thumbnail_maximum_value">Up to %1$d px on the longest side</string>
+  <string name="thumbnail_info_dimensions">Actual image dimensions</string>
+  <string name="thumbnail_dimensions_value">%1$d × %2$d px</string>
+  <string name="thumbnail_info_format">Cached image format</string>
+  <string name="thumbnail_info_size">Cached file size</string>
+  <string name="thumbnail_info_memory">Present in browser memory cache</string>
+  <string name="thumbnail_info_preview_memory">Preview memory</string>
+  <string name="thumbnail_info_frame">Configured frame position</string>
+  <string name="thumbnail_percent_value">%1$.1f%%</string>
+  <string name="thumbnail_info_jpeg_setting">App JPEG encoder setting</string>
+  <string name="thumbnail_jpeg_value">%1$d%%</string>
+  <string name="thumbnail_info_modified">Cache file updated</string>
+  <string name="thumbnail_info_cache_path">Cache file path</string>
+  <string name="thumbnail_info_source">Source URI</string>
+  <string name="thumbnail_yes">Yes</string>
+  <string name="thumbnail_no">No</string>
+  <string name="thumbnail_refresh">Refresh info</string>
+  <string name="thumbnail_generate">Generate thumbnail</string>
+  <string name="thumbnail_quality_note">This is the cached preview, not a new frame. Its size may be below your chosen limit.</string>
+  <string name="thumbnail_inspection_failed">Thumbnail information could not be read. Try refreshing.</string>
+  <string name="thumbnail_generation_unavailable">The selected generator did not return a thumbnail for this file.</string>
+
   <string name="update_download_failed">Download failed. Tap Retry to resume.</string>
   <string name="update_install_failed">Could not open the installer. You can try again.</string>
   <string name="update_install_permission">Allow this app to install updates in Android settings, then tap Install again.</string>
   <string name="update_checking_download">Checking downloaded APK…</string>
   <string name="update_check_failed">Could not check for updates. Check your connection or try again later.</string>
   <string name="update_auto_install">Automatically download and install</string>
+  <string name="update_auto_install_summary">Download on unmetered networks; install when idle. Android may ask permission.</string>
   <string name="update_download_and_install">Download and install</string>
   <string name="update_background_downloading">Downloading app update…</string>
   <string name="update_installing">Installing update…</string>
@@ -3057,16 +3094,13 @@
   <string name="pref_audio_animated_artwork_apple_music_title">Apple Music motion covers</string>
   <string name="pref_audio_animated_artwork_apple_music_summary">Tried first. Album-level square loops; no account needed.</string>
   <string name="pref_audio_animated_artwork_tidal_title">TIDAL video covers</string>
-  <string name="pref_audio_animated_artwork_tidal_summary">Tried when Apple Music has none. Square 1280px loops; no account needed.</string>
-  <string name="pref_audio_animated_artwork_spotify_title">Spotify Canvas</string>
-  <string name="pref_audio_animated_artwork_spotify_summary">Tried last. Spotify\'s portrait loops, read with your Spotify session.</string>
-  <string name="pref_audio_animated_artwork_spotify_needs_cookie">Needs your Spotify sp_dc session cookie.</string>
-  <string name="pref_spotify_sp_dc_cookie">Spotify sp_dc cookie</string>
-  <string name="pref_spotify_cookie_not_set">Not set</string>
-  <string name="pref_spotify_cookie_set">Saved</string>
-  <string name="pref_spotify_sp_dc_cookie_dialog_desc">1. Sign in at open.spotify.com in a browser.\n2. Open Developer Tools, then Application and Cookies.\n3. Copy the value of the sp_dc cookie and paste it below.\n\nIt is stored on this device and sent only to Spotify. It grants access to your Spotify account, so never share it.</string>
-  <string name="pref_audio_high_quality_artwork_title">High-quality artwork</string>
-  <string name="pref_audio_high_quality_artwork_summary">Downloads the sharpest cover Apple Music (up to 3000px) or TIDAL publishes for each song, even when the file has its own, and caches it for every later play.</string>
+  <string name="pref_audio_animated_artwork_tidal_summary">Tried when Apple Music has none. Uses your TIDAL developer credentials.</string>
+  <string name="pref_audio_animated_artwork_tidal_needs_credentials">Needs a client ID and secret from developer.tidal.com.</string>
+  <string name="pref_tidal_client_id">TIDAL client ID</string>
+  <string name="pref_tidal_client_secret">TIDAL client secret</string>
+  <string name="pref_tidal_credentials_not_set">Not set</string>
+  <string name="pref_tidal_client_secret_set">Saved</string>
+  <string name="pref_tidal_credentials_dialog_desc">Create an app at developer.tidal.com and paste its client credentials. They are stored on this device and sent only to TIDAL.</string>
   <string name="jellyfin_featured">Featured</string>
   <string name="jellyfin_series">Series</string>
   <string name="jellyfin_movie">Movie</string>
@@ -3255,11 +3289,15 @@
   <string name="pref_floating_lyrics_summary">Show a movable lyrics pill over other apps</string>
   <string name="floating_lyrics_permission">Allow Display over other apps to use floating lyrics</string>
   <string name="floating_lyrics_unavailable">Could not start floating lyrics</string>
+  <string name="floating_lyrics_background_required">Enable audio background playback first</string>
   <string name="floating_lyrics_open_player">Open player</string>
   <string name="floating_lyrics_dock_left">Move floating lyrics to the left</string>
   <string name="floating_lyrics_dock_right">Move floating lyrics to the right</string>
   <string name="floating_lyrics_dismiss">Hide until mpvRx is reopened</string>
   <string name="floating_lyrics_turn_off">Turn off floating lyrics</string>
   <string name="floating_lyrics_never">Never</string>
-  <string name="toast_media_file_missing">This file no longer exists; the list will refresh.</string>
+  <string name="floating_lyrics_no_lyrics">No lyrics available</string>
+    <string name="browser_last_watched">Last watched %1$s</string>
+    <string name="browser_material_cards">Material Cards</string>
+    <string name="browser_last_watched_toggle">Last watched</string>
 </resources>

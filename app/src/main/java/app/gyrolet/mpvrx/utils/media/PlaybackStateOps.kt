@@ -9,13 +9,14 @@
 
 package app.gyrolet.mpvrx.utils.media
 
+import android.util.Log
 import app.gyrolet.mpvrx.database.MpvRxDatabase
 import app.gyrolet.mpvrx.database.entities.PlaybackStateEntity
 import app.gyrolet.mpvrx.domain.media.model.Video
 import app.gyrolet.mpvrx.domain.playbackstate.repository.PlaybackStateRepository
+import app.gyrolet.mpvrx.ui.player.PlaybackIdentity
 import app.gyrolet.mpvrx.ui.browser.videolist.videoPlaybackIdentifiers
 import app.gyrolet.mpvrx.utils.history.RecentlyPlayedOps
-import app.gyrolet.mpvrx.utils.logging.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -31,17 +32,11 @@ object PlaybackStateOps {
   private val repository: PlaybackStateRepository by inject(PlaybackStateRepository::class.java)
   private val database: MpvRxDatabase by inject(MpvRxDatabase::class.java)
 
-  suspend fun setWatched(
-    video: Video,
-    watched: Boolean,
-  ) = setWatched(listOf(video), watched)
+  suspend fun setWatched(video: Video, watched: Boolean) = setWatched(listOf(video), watched)
 
-  suspend fun setWatched(
-    videos: List<Video>,
-    watched: Boolean,
-  ) = withContext(Dispatchers.IO) {
+  suspend fun setWatched(videos: List<Video>, watched: Boolean) = withContext(Dispatchers.IO) {
     try {
-      videos.filterNot { it.isAudio }.forEach { video ->
+      videos.forEach { video ->
         currentCoroutineContext().ensureActive()
         persistWatched(video, watched)
         database.playlistDao().clearResumePositionForFile(video.path)
@@ -51,48 +46,29 @@ object PlaybackStateOps {
     }
   }
 
-  suspend fun areAllWatched(
-    videos: List<Video>,
-    threshold: Int,
-  ): Boolean {
-    val videoFiles = videos.filterNot { it.isAudio }
-    val watched = watchedPaths(videoFiles, threshold)
-    return videoFiles.isNotEmpty() && videoFiles.all { it.path in watched }
+  suspend fun areAllWatched(videos: List<Video>, threshold: Int): Boolean {
+    val watched = watchedPaths(videos, threshold)
+    return videos.isNotEmpty() && videos.all { it.path in watched }
   }
 
-  suspend fun watchedPaths(
-    videos: List<Video>,
-    threshold: Int,
-  ): Set<String> =
-    withContext(Dispatchers.IO) {
-      val states = repository.getAllPlaybackStates().associateBy { it.mediaTitle }
-      videos
-        .filter { video ->
-          if (video.isAudio) return@filter false
-          val state = videoPlaybackIdentifiers(video).firstNotNullOfOrNull(states::get)
-          val duration = video.duration / 1000.0
-          if (app.gyrolet.mpvrx.BuildConfig.SCOPED_STORAGE_ONLY) {
-            return@filter app.gyrolet.mpvrx.ui.browser.videolist
-              .buildVideoWithPlaybackInfo(
-                video,
-                state,
-                System.currentTimeMillis(),
-                0,
-                threshold,
-              ).isWatched
-          }
-          state != null &&
-            (
-              state.hasBeenWatched ||
-                (threshold > 0 && duration > 0 && (duration - state.timeRemaining) / duration >= threshold / 100.0)
-            )
-        }.mapTo(mutableSetOf()) { it.path }
-    }
+  suspend fun watchedPaths(videos: List<Video>, threshold: Int): Set<String> = withContext(Dispatchers.IO) {
+    val states = repository.getAllPlaybackStates().associateBy { it.mediaTitle }
+    videos.filter { video ->
+      val state = videoPlaybackIdentifiers(video).firstNotNullOfOrNull(states::get)
+      val duration = video.duration / 1000.0
+      if (app.gyrolet.mpvrx.BuildConfig.SCOPED_STORAGE_ONLY) {
+        return@filter app.gyrolet.mpvrx.ui.browser.videolist.buildVideoWithPlaybackInfo(
+          video, state, System.currentTimeMillis(), 0, threshold,
+        ).isWatched
+      }
+      state != null && (state.hasBeenWatched ||
+        ((state.lastPosition > 0 || state.timeRemaining > 0) &&
+          threshold > 0 && duration > 0 &&
+          (duration - state.timeRemaining) / duration >= threshold / 100.0))
+    }.mapTo(mutableSetOf()) { it.path }
+  }
 
-  suspend fun resetWatchHistory(
-    videos: List<Video>,
-    markAsNew: Boolean,
-  ) = withContext(Dispatchers.IO) {
+  suspend fun resetWatchHistory(videos: List<Video>, markAsNew: Boolean) = withContext(Dispatchers.IO) {
     try {
       videos.forEach { video ->
         currentCoroutineContext().ensureActive()
@@ -107,55 +83,104 @@ object PlaybackStateOps {
     }
   }
 
-  suspend fun markLastPlayed(videos: List<Video>): Boolean =
-    withContext(Dispatchers.IO) {
-      if (!RecentlyPlayedOps.markLastPlayed(videos)) return@withContext false
-      try {
-        videos.forEach { video ->
-          currentCoroutineContext().ensureActive()
-          val existing = videoPlaybackIdentifiers(video).firstNotNullOfOrNull { repository.getVideoDataByTitle(it) }
-          if (existing == null) {
-            persistWatched(video, watched = false, newLabelOverride = false)
-          } else {
-            repository.upsert(existing.copy(newLabelOverride = false))
-          }
-          database.playlistDao().markFileLastPlayed(video.path, System.currentTimeMillis())
+  suspend fun markLastPlayed(videos: List<Video>): Boolean = withContext(Dispatchers.IO) {
+    if (!RecentlyPlayedOps.markLastPlayed(videos)) return@withContext false
+    try {
+      videos.forEach { video ->
+        currentCoroutineContext().ensureActive()
+        val existing = videoPlaybackIdentifiers(video).firstNotNullOfOrNull { repository.getVideoDataByTitle(it) }
+        val now = System.currentTimeMillis()
+        if (existing == null) {
+          persistWatched(video, watched = false, newLabelOverride = false, lastPlayedAt = now)
+        } else {
+          repository.upsert(existing.copy(newLabelOverride = false, lastPlayedAt = now))
         }
-      } finally {
-        PlaybackStateEvents.notifyChanged("")
+        database.playlistDao().markFileLastPlayed(video.path, now)
       }
-      true
+    } finally {
+      PlaybackStateEvents.notifyChanged("")
     }
+    true
+  }
+
+  /**
+   * A video stops being NEW as soon as playback actually opens it, not only after it
+   * reaches the watched threshold. Preserve its resume position and all player settings.
+   */
+  suspend fun markPlaybackStarted(
+    filePath: String,
+    uriString: String? = null,
+    durationSeconds: Int = 0,
+  ) = withContext(Dispatchers.IO) {
+    val path = filePath.trim()
+    val uri = uriString?.trim().orEmpty()
+    if (path.isBlank() && uri.isBlank()) return@withContext
+
+    val parsedUri = runCatching { android.net.Uri.parse(uri.ifBlank { path }) }.getOrNull()
+    val scheme = parsedUri?.scheme?.lowercase()
+    if (scheme !in setOf("file", "content") && !path.startsWith('/')) return@withContext
+
+    val identifiers = linkedSetOf<String>()
+    val scopedContent = app.gyrolet.mpvrx.BuildConfig.SCOPED_STORAGE_ONLY &&
+      scheme == "content" &&
+      (parsedUri?.authority != android.provider.MediaStore.AUTHORITY || !path.startsWith('/'))
+    if (scopedContent && uri.isNotBlank()) identifiers += PlaybackIdentity.forUri(uri)
+    if (path.startsWith('/')) identifiers += PlaybackIdentity.forLocalPath(path)
+    if (uri.isNotBlank()) identifiers += PlaybackIdentity.forUri(uri)
+    if (path.isNotBlank()) identifiers += PlaybackIdentity.forUri(path)
+    if (path.startsWith('/')) identifiers += PlaybackIdentity.forUri("file://$path")
+    if (identifiers.isEmpty()) return@withContext
+
+    val existing = identifiers.firstNotNullOfOrNull { repository.getVideoDataByTitle(it) }
+    val now = System.currentTimeMillis()
+    val updated = existing?.copy(
+      newLabelOverride = false,
+      lastPlayedAt = now,
+      timeRemaining = if (
+        existing.lastPosition == 0 && existing.timeRemaining == 0 &&
+        !existing.hasBeenWatched && durationSeconds > 0
+      ) durationSeconds else existing.timeRemaining,
+    ) ?: PlaybackStateEntity(
+        mediaTitle = identifiers.first(),
+        lastPosition = 0,
+        playbackSpeed = 1.0,
+        sid = -1,
+        subDelay = 0,
+        subSpeed = 1.0,
+        aid = -1,
+        audioDelay = 0,
+        timeRemaining = durationSeconds.coerceAtLeast(0),
+        newLabelOverride = false,
+        lastPlayedAt = now,
+      )
+    repository.upsert(updated)
+    PlaybackStateEvents.notifyChanged(updated.mediaTitle)
+  }
 
   private suspend fun persistWatched(
     video: Video,
     watched: Boolean,
     newLabelOverride: Boolean? = null,
+    lastPlayedAt: Long? = null,
   ) {
     val identifier = videoPlaybackIdentifiers(video).first()
     val existing = videoPlaybackIdentifiers(video).firstNotNullOfOrNull { repository.getVideoDataByTitle(it) }
-    val recordedDuration =
-      if (app.gyrolet.mpvrx.BuildConfig.SCOPED_STORAGE_ONLY) {
-        existing?.let { it.lastPosition.toLong() + it.timeRemaining.toLong() } ?: 0L
-      } else {
-        0L
-      }
-    val durationSeconds =
-      ((video.duration / 1000L).takeIf { it > 0L } ?: recordedDuration)
-        .coerceIn(0L, Int.MAX_VALUE.toLong())
-        .toInt()
-    val state =
-      existing ?: PlaybackStateEntity(
-        mediaTitle = identifier,
-        lastPosition = 0,
-        playbackSpeed = 1.0,
-        sid = -1,
-        secondarySid = -1,
-        subDelay = 0,
-        subSpeed = 1.0,
-        aid = -1,
-        audioDelay = 0,
-      )
+    val recordedDuration = if (app.gyrolet.mpvrx.BuildConfig.SCOPED_STORAGE_ONLY) {
+      existing?.let { it.lastPosition.toLong() + it.timeRemaining.toLong() } ?: 0L
+    } else 0L
+    val durationSeconds = ((video.duration / 1000L).takeIf { it > 0L } ?: recordedDuration)
+      .coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
+    val state = existing ?: PlaybackStateEntity(
+      mediaTitle = identifier,
+      lastPosition = 0,
+      playbackSpeed = 1.0,
+      sid = -1,
+      secondarySid = -1,
+      subDelay = 0,
+      subSpeed = 1.0,
+      aid = -1,
+      audioDelay = 0,
+    )
     repository.upsert(
       state.copy(
         mediaTitle = identifier,
@@ -163,17 +188,13 @@ object PlaybackStateOps {
         timeRemaining = if (watched) 0 else durationSeconds,
         hasBeenWatched = watched,
         newLabelOverride = newLabelOverride,
+        lastPlayedAt = lastPlayedAt ?: state.lastPlayedAt,
       ),
     )
   }
 
   /** Provider-aware history migration for scoped rename/move operations. */
-  suspend fun onScopedVideoRenamed(
-    video: Video,
-    newPath: String,
-    newUri: android.net.Uri,
-    newName: String,
-  ) {
+  suspend fun onScopedVideoRenamed(video: Video, newPath: String, newUri: android.net.Uri, newName: String) {
     val oldKeys = videoPlaybackIdentifiers(video)
     val destination = video.copy(path = newPath, uri = newUri, displayName = newName)
     val newKey = videoPlaybackIdentifiers(destination).first()

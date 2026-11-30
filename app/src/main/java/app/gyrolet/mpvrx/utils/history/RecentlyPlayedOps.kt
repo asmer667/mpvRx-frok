@@ -35,10 +35,7 @@ object RecentlyPlayedOps {
 
   private val MEDIA_STORE_PREFIX = "content://${MediaStore.AUTHORITY}/"
 
-  private class MediaStoreRow(
-    val exists: Boolean,
-    val path: String?,
-  )
+  private class MediaStoreRow(val exists: Boolean, val path: String?)
 
   suspend fun addRecentlyPlayed(
     filePath: String,
@@ -137,6 +134,13 @@ object RecentlyPlayedOps {
       lastPlayedVideo(repository.getRecentlyPlayed(limit), videos)
     }
 
+  /** Returns the full per-file history for accurate folder and episode timestamps. */
+  suspend fun getAllRecentlyPlayed(): List<RecentlyPlayedEntity> =
+    withContext(Dispatchers.IO) {
+      val count = repository.getRecentlyPlayedCount()
+      if (count <= 0) emptyList() else repository.getRecentlyPlayed(count)
+    }
+
   /**
    * Matches history against the current listing using both URI and local-file identities.
    * SAF can return the same document under different tree grants, so raw URI equality alone is
@@ -157,6 +161,29 @@ object RecentlyPlayedOps {
     return history.firstNotNullOfOrNull { entity ->
       historyIdentityKeys(entity.filePath).firstNotNullOfOrNull(videosByKey::get)
     }
+  }
+
+  /**
+   * Maps the newest stored history timestamp to each matching video path. History is already
+   * ordered newest-first by the DAO; URI and local-path aliases are normalized before matching.
+   */
+  fun lastPlayedTimestampsByPath(
+    history: List<RecentlyPlayedEntity>,
+    videos: List<Video>,
+  ): Map<String, Long> {
+    if (history.isEmpty() || videos.isEmpty()) return emptyMap()
+    val videosByKey = HashMap<String, Video>(videos.size * 3)
+    videos.forEach { video ->
+      (mediaIdentityKeys(video.path) + mediaIdentityKeys(video.uri.toString())).forEach { key ->
+        videosByKey.putIfAbsent(key, video)
+      }
+    }
+    val result = LinkedHashMap<String, Long>()
+    history.forEach { entry ->
+      val video = historyIdentityKeys(entry.filePath).firstNotNullOfOrNull(videosByKey::get) ?: return@forEach
+      result.putIfAbsent(video.path, entry.timestamp)
+    }
+    return result
   }
 
   fun matchesVideoPath(
@@ -216,12 +243,11 @@ object RecentlyPlayedOps {
       }.distinctUntilChanged()
       .flowOn(Dispatchers.IO)
 
-  suspend fun removeVideoHistory(video: Video) =
-    withContext(Dispatchers.IO) {
-      setOf(video.path, video.uri.toString(), Uri.fromFile(File(video.path)).toString()).forEach { path ->
-        repository.deleteByFilePath(path)
-      }
+  suspend fun removeVideoHistory(video: Video) = withContext(Dispatchers.IO) {
+    setOf(video.path, video.uri.toString(), Uri.fromFile(File(video.path)).toString()).forEach { path ->
+      repository.deleteByFilePath(path)
     }
+  }
 
   suspend fun markLastPlayed(videos: List<Video>): Boolean =
     withContext(Dispatchers.IO) {
@@ -260,11 +286,9 @@ object RecentlyPlayedOps {
     kotlin
       .runCatching {
         repository.updateFilePath(oldPath, newPath, newFileName)
-        app.gyrolet.mpvrx.utils.logging.Log
-          .d("RecentlyPlayedOps", "Updated history: $oldPath -> $newPath")
+        android.util.Log.d("RecentlyPlayedOps", "Updated history: $oldPath -> $newPath")
       }.onFailure { e ->
-        app.gyrolet.mpvrx.utils.logging.Log
-          .w("RecentlyPlayedOps", "Failed to update history path: ${e.message}")
+        android.util.Log.w("RecentlyPlayedOps", "Failed to update history path: ${e.message}")
       }
   }
 

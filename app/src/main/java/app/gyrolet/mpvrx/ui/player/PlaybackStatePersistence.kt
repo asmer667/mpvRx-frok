@@ -40,7 +40,6 @@ internal data class PlaybackStateSnapshot(
   val isPositionRestorePending: Boolean = false,
   /** A live stream's position is a moment in a broadcast that will be gone on the next visit. */
   val isLive: Boolean = false,
-  val isAudio: Boolean = false,
 )
 
 internal object PlaybackStatePersistence {
@@ -94,13 +93,16 @@ internal object PlaybackStatePersistence {
       manualAudioId = manualAudioId,
       externalAudio = snapshot.externalAudio.ifBlank { oldState?.externalAudio.orEmpty() },
       hasBeenWatched =
-        !snapshot.isAudio && isWatched(
+        isWatched(
           oldState = oldState,
           currentPosition = snapshot.currentPosition,
           lastPosition = lastPosition,
           duration = duration,
           watchedThreshold = watchedThreshold,
         ),
+      // Player progress saves must not discard explicit NEW-label decisions or timestamps.
+      newLabelOverride = oldState?.newLabelOverride,
+      lastPlayedAt = oldState?.lastPlayedAt ?: 0L,
     )
   }
 

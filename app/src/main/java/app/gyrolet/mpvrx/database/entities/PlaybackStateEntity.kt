@@ -9,6 +9,7 @@
 
 package app.gyrolet.mpvrx.database.entities
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -28,6 +29,9 @@ data class PlaybackStateEntity(
   val externalSubtitles: String = "", // Comma-separated list of external subtitle URIs
   val hasBeenWatched: Boolean = false, // Persistent flag: true if video has ever reached the watched threshold
   val newLabelOverride: Boolean? = null,
+  /** Wall-clock time when this media was last opened for playback. */
+  @ColumnInfo(defaultValue = "0")
+  val lastPlayedAt: Long = 0L,
   // True only when [manualAudioId] holds a choice the user made by hand for this file.
   // Selections mpv or the automatic correction produced are never stored as manual: on the
   // next open they are decided again by the preferred-language rules. Rows written before

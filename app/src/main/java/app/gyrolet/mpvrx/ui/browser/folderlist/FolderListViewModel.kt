@@ -10,10 +10,10 @@
 package app.gyrolet.mpvrx.ui.browser.folderlist
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import app.gyrolet.mpvrx.database.entities.PlaybackStateEntity
 import app.gyrolet.mpvrx.domain.media.model.Video
 import app.gyrolet.mpvrx.domain.media.model.VideoFolder
 import app.gyrolet.mpvrx.domain.playbackstate.repository.PlaybackStateRepository
@@ -22,13 +22,12 @@ import app.gyrolet.mpvrx.preferences.FoldersPreferences
 import app.gyrolet.mpvrx.preferences.HiddenScanScope
 import app.gyrolet.mpvrx.repository.MediaFileRepository
 import app.gyrolet.mpvrx.ui.browser.base.BaseBrowserViewModel
-import app.gyrolet.mpvrx.utils.logging.Log
+import app.gyrolet.mpvrx.database.entities.PlaybackStateEntity
 import app.gyrolet.mpvrx.utils.media.MediaLibraryEvents
 import app.gyrolet.mpvrx.utils.media.MetadataRetrieval
 import app.gyrolet.mpvrx.utils.media.PlaybackStateEvents
-import app.gyrolet.mpvrx.utils.media.ScopedHiddenFolderScanner
 import app.gyrolet.mpvrx.utils.permission.PermissionUtils.StorageOps
-import app.gyrolet.mpvrx.utils.storage.MediaIndexing
+import app.gyrolet.mpvrx.utils.media.ScopedHiddenFolderScanner
 import app.gyrolet.mpvrx.utils.storage.MediaStoreGenerationGuard
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -52,12 +51,13 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import java.io.File
 import java.util.Locale
+import java.io.File
 
 data class FolderWithNewCount(
   val folder: VideoFolder,
   val newVideoCount: Int = 0,
+  val lastPlayedAtMillis: Long? = null,
 )
 
 class FolderListViewModel(
@@ -70,7 +70,7 @@ class FolderListViewModel(
   private val browserPreferences: app.gyrolet.mpvrx.preferences.BrowserPreferences by inject()
   private val playbackStateRepository: PlaybackStateRepository by inject()
 
-  private val allVideoFoldersState = MutableStateFlow<List<VideoFolder>>(emptyList())
+  private val _allVideoFolders = MutableStateFlow<List<VideoFolder>>(emptyList())
   private val pendingFolderDeletionKeys = MutableStateFlow<Set<String>>(emptySet())
   private val completedFolderDeletionKeys = MutableStateFlow<Set<String>>(emptySet())
   private val _videoFolders = MutableStateFlow<List<VideoFolder>>(emptyList())
@@ -105,7 +105,6 @@ class FolderListViewModel(
 
   // Track the current scan job to prevent concurrent scans
   private var currentScanJob: Job? = null
-
   @Volatile private var currentListingReady: CompletableDeferred<Unit>? = null
   private var cacheWriteJob: Job? = null
   private var lastHiddenMarkerSnapshot: Map<String, Boolean>? = null
@@ -120,7 +119,7 @@ class FolderListViewModel(
    */
   private var observedMediaStoreGeneration: String? = null
 
-  companion object {
+    companion object {
     private const val TAG = "FolderListViewModel"
     private const val MEDIA_LIBRARY_REFRESH_DEBOUNCE_MS = 750L
 
@@ -167,10 +166,7 @@ class FolderListViewModel(
         ) { _ -> Unit }
           .drop(1)
 
-      merge(
-        MediaLibraryEvents.changes.map { true },
-        scanPreferenceChanges.map { false },
-      ).conflate().collect { mediaChanged ->
+      merge(MediaLibraryEvents.changes.map { true }, scanPreferenceChanges.map { false }).conflate().collect { mediaChanged ->
         delay(MEDIA_LIBRARY_REFRESH_DEBOUNCE_MS)
         // Let an in-flight basic listing publish even during a continuous scanner burst.
         // This does not wait for hidden discovery or optional metadata enrichment.
@@ -190,27 +186,24 @@ class FolderListViewModel(
     }
 
     // Filter folders based on blacklist (video vs audio scope)
-    val blacklistFlow =
-      if (audioOnly) {
-        foldersPreferences.blacklistedAudioFolders.changes()
-      } else {
-        foldersPreferences.blacklistedFolders.changes()
-      }
+    val blacklistFlow = if (audioOnly) {
+      foldersPreferences.blacklistedAudioFolders.changes()
+    } else {
+      foldersPreferences.blacklistedFolders.changes()
+    }
 
     viewModelScope.launch {
       combine(
-        allVideoFoldersState,
+        _allVideoFolders,
         blacklistFlow,
         foldersPreferences.whitelistChanges(),
         pendingFolderDeletionKeys,
       ) { folders, blacklist, (whitelistEnabled, whitelist), pendingDeletions ->
         folders.filter { folder ->
           folderKey(folder) !in pendingDeletions &&
-            app.gyrolet.mpvrx.utils.storage
-              .isWhitelistedMediaPath(folder.path, whitelistEnabled, whitelist) &&
+            app.gyrolet.mpvrx.utils.storage.isWhitelistedMediaPath(folder.path, whitelistEnabled, whitelist) &&
             blacklist.none { blacklisted ->
-              app.gyrolet.mpvrx.utils.storage
-                .isMediaPathInFolder(folder.path, blacklisted)
+              app.gyrolet.mpvrx.utils.storage.isMediaPathInFolder(folder.path, blacklisted)
             }
         }
       }.collectLatest { filteredFolders ->
@@ -233,7 +226,7 @@ class FolderListViewModel(
 
         // Pending deletions must not leak back into the next launch through the cache.
         val pendingDeletions = pendingFolderDeletionKeys.value
-        saveFoldersToCache(allVideoFoldersState.value.filterNot { folderKey(it) in pendingDeletions })
+        saveFoldersToCache(_allVideoFolders.value.filterNot { folderKey(it) in pendingDeletions })
       }
     }
 
@@ -243,14 +236,17 @@ class FolderListViewModel(
       // Built by each complete count. A playback save then recounts only the folders holding that
       // item: the full pass hashed every video's identities and ran every few seconds in playback.
       var identityIndex: FolderIdentityIndex? = null
-      val badgeInputs =
+      val badgeSettings =
         combine(
-          _videoFolders,
           appearancePreferences.showUnplayedOldVideoLabel.changes(),
           appearancePreferences.unplayedOldVideoDays.changes(),
           browserPreferences.watchedThreshold.changes(),
-          folderContentRevision,
-        ) { _, _, _, _, revision -> Pair<Long, String?>(revision, null) }
+          browserPreferences.showLastPlayedTime.changes(),
+        ) { _, _, _, _ -> Unit }
+      val badgeInputs =
+        combine(_videoFolders, badgeSettings, folderContentRevision) { _, _, revision ->
+          Pair<Long, String?>(revision, null)
+        }
       val playbackChanges =
         PlaybackStateEvents.changes.map { identifier ->
           Pair<Long, String?>(folderContentRevision.value, identifier.takeIf(String::isNotBlank))
@@ -288,14 +284,13 @@ class FolderListViewModel(
     if (cachedJson != null) {
       try {
         // Parse JSON and restore folders
-        val folders =
-          parseFoldersFromJson(cachedJson).filterNot {
-            ScopedHiddenFolderScanner.isScopedFolder(it.bucketId) && it.videoCount == 0
-          }
+        val folders = parseFoldersFromJson(cachedJson).filterNot {
+          ScopedHiddenFolderScanner.isScopedFolder(it.bucketId) && it.videoCount == 0
+        }
         if (folders.isNotEmpty()) {
           Log.d(TAG, "Loaded ${folders.size} folders from cache instantly")
           hasCachedData = true
-          allVideoFoldersState.value = folders
+          _allVideoFolders.value = folders
           _hasCompletedInitialLoad.value = true
           _isLoading.value = false
         }
@@ -341,7 +336,7 @@ class FolderListViewModel(
   private fun serializeFoldersToJson(folders: List<VideoFolder>): String {
     // Simple JSON serialization
     return folders.joinToString(separator = "|") { folder ->
-      "${folder.bucketId}::${folder.name}::${folder.path}::${folder.videoCount}::${folder.totalSize}::${folder.totalDuration}::${folder.lastModified}::${if (folder.isHidden) 1 else 0}"
+      "${folder.bucketId}::${folder.name}::${folder.path}::${folder.videoCount}::${folder.totalSize}::${folder.totalDuration}::${folder.lastModified}"
     }
   }
 
@@ -349,8 +344,7 @@ class FolderListViewModel(
     try {
       json.split("|").mapNotNull { item ->
         val parts = item.split("::")
-        // Entries saved before the hidden flag have 7 fields.
-        if (parts.size == 7 || parts.size == 8) {
+        if (parts.size == 7) {
           VideoFolder(
             bucketId = parts[0],
             name = parts[1],
@@ -359,7 +353,6 @@ class FolderListViewModel(
             totalSize = parts[4].toLongOrNull() ?: 0L,
             totalDuration = parts[5].toLongOrNull() ?: 0L,
             lastModified = parts[6].toLongOrNull() ?: 0L,
-            isHidden = parts.getOrNull(7) == "1",
           )
         } else {
           null
@@ -378,38 +371,60 @@ class FolderListViewModel(
     folderVideos.keys.retainAll(folders.toSet())
     try {
       val parameters = newBadgeParameters()
-      if (parameters == null) {
+      val showLastPlayedTimes = browserPreferences.showLastPlayedTime.get()
+      if (parameters == null && !showLastPlayedTimes) {
         folderVideos.clear()
         _foldersWithNewCount.value = folders.map { FolderWithNewCount(it, 0) }
-        // Badges are off, so playback saves have nothing to update.
         return FolderIdentityIndex.EMPTY
       }
-      // One snapshot per pass: per-video lookups issued up to four Room queries for every video in
-      // every folder, which mostly miss because most videos were never played.
+      // Playback states also carry the actual last-played timestamp, independently of NEW badges
+      // and the optional Recently Played history feature.
       val playbackByIdentifier = playbackStateRepository.getAllPlaybackStates().associateBy { it.mediaTitle }
+      val recentHistory =
+        if (showLastPlayedTimes) app.gyrolet.mpvrx.utils.history.RecentlyPlayedOps.getAllRecentlyPlayed()
+        else emptyList()
       val indexBuilder = FolderIdentityIndex.Builder(folders)
 
       val foldersWithCounts =
         folders.mapIndexed { folderIndex, folder ->
           try {
-            val videos =
-              folderVideos[folder] ?: MediaFileRepository
-                .getVideosInFolder(
-                  context = getApplication(),
-                  bucketId = folder.bucketId,
-                  forceFileSystemCheck = false,
-                ).also {
-                  currentCoroutineContext().ensureActive()
-                  folderVideos[folder] = it
-                }
+            val videos = folderVideos[folder] ?: MediaFileRepository.getVideosInFolder(
+              context = getApplication(),
+              bucketId = folder.bucketId,
+              forceFileSystemCheck = false,
+            ).also {
+              currentCoroutineContext().ensureActive()
+              folderVideos[folder] = it
+            }
 
             val newCount =
-              countNewVideos(videos, parameters) { identifiers ->
-                indexBuilder.add(identifiers, folderIndex)
-                identifiers.firstNotNullOfOrNull(playbackByIdentifier::get)
+              if (parameters != null) {
+                countNewVideos(videos, parameters) { identifiers ->
+                  indexBuilder.add(identifiers, folderIndex)
+                  identifiers.firstNotNullOfOrNull(playbackByIdentifier::get)
+                }
+              } else {
+                videos.forEach { video ->
+                  indexBuilder.add(app.gyrolet.mpvrx.ui.browser.videolist.videoPlaybackIdentifiers(video), folderIndex)
+                }
+                0
+              }
+            val lastPlayedAt =
+              if (showLastPlayedTimes) {
+                val historyTimestamps =
+                  app.gyrolet.mpvrx.utils.history.RecentlyPlayedOps.lastPlayedTimestampsByPath(recentHistory, videos)
+                videos.maxOfOrNull { video ->
+                  maxOf(
+                    app.gyrolet.mpvrx.ui.browser.videolist.videoPlaybackIdentifiers(video)
+                      .firstNotNullOfOrNull { playbackByIdentifier[it]?.lastPlayedAt } ?: 0L,
+                    historyTimestamps[video.path] ?: 0L,
+                  )
+                }?.takeIf { it > 0L }
+              } else {
+                null
               }
 
-            FolderWithNewCount(folder, newCount)
+            FolderWithNewCount(folder, newCount, lastPlayedAt)
           } catch (cancellation: CancellationException) {
             throw cancellation
           } catch (e: Exception) {
@@ -435,20 +450,38 @@ class FolderListViewModel(
     folders: List<VideoFolder>,
     folderVideos: Map<VideoFolder, List<Video>>,
   ) {
-    val parameters = newBadgeParameters() ?: return
+    val parameters = newBadgeParameters()
+    val showLastPlayedTimes = browserPreferences.showLastPlayedTime.get()
+    if (parameters == null && !showLastPlayedTimes) return
+    val playbackByIdentifier = playbackStateRepository.getAllPlaybackStates().associateBy { it.mediaTitle }
     val recounted =
-      folders
-        .mapNotNull { folder ->
-          val videos = folderVideos[folder] ?: return@mapNotNull null
-          folder to
-            countNewVideos(videos, parameters) { identifiers ->
-              identifiers.firstNotNullOfOrNull { playbackStateRepository.getVideoDataByTitle(it) }
-            }
-        }.toMap()
+      folders.mapNotNull { folder ->
+        val videos = folderVideos[folder] ?: return@mapNotNull null
+        val newCount =
+          if (parameters != null) {
+            countNewVideos(videos, parameters) { identifiers -> identifiers.firstNotNullOfOrNull(playbackByIdentifier::get) }
+          } else {
+            0
+          }
+        val lastPlayedAt =
+          if (showLastPlayedTimes) {
+            videos.maxOfOrNull { video ->
+              app.gyrolet.mpvrx.ui.browser.videolist.videoPlaybackIdentifiers(video)
+                .firstNotNullOfOrNull { playbackByIdentifier[it]?.lastPlayedAt } ?: 0L
+            }?.takeIf { it > 0L }
+          } else {
+            null
+          }
+        folder to (newCount to lastPlayedAt)
+      }.toMap()
     if (recounted.isEmpty()) return
     currentCoroutineContext().ensureActive()
     _foldersWithNewCount.update { current ->
-      current.map { entry -> recounted[entry.folder]?.let { entry.copy(newVideoCount = it) } ?: entry }
+      current.map { entry ->
+        recounted[entry.folder]?.let { (count, timestamp) ->
+          entry.copy(newVideoCount = count, lastPlayedAtMillis = timestamp)
+        } ?: entry
+      }
     }
   }
 
@@ -477,34 +510,28 @@ class FolderListViewModel(
     playbackStateFor: suspend (identifiers: Set<String>) -> PlaybackStateEntity?,
   ): Int =
     videos.count { video ->
-      if (video.isAudio) return@count false
       val videoAge = parameters.currentTime - (video.dateModified * 1000)
       val isRecent = videoAge <= parameters.thresholdMillis
       val playbackState =
-        playbackStateFor(
-          app.gyrolet.mpvrx.ui.browser.videolist
-            .videoPlaybackIdentifiers(video),
-        )
+        playbackStateFor(app.gyrolet.mpvrx.ui.browser.videolist.videoPlaybackIdentifiers(video))
 
       if (app.gyrolet.mpvrx.BuildConfig.SCOPED_STORAGE_ONLY) {
-        return@count app.gyrolet.mpvrx.ui.browser.videolist
-          .buildVideoWithPlaybackInfo(
-            video,
-            playbackState,
-            parameters.currentTime,
-            parameters.newLabelDays,
-            parameters.watchedThreshold,
-          ).isOldAndUnplayed
+        return@count app.gyrolet.mpvrx.ui.browser.videolist.buildVideoWithPlaybackInfo(
+          video, playbackState, parameters.currentTime, parameters.newLabelDays, parameters.watchedThreshold,
+        ).isOldAndUnplayed
       }
+      val hasPlaybackProgress = playbackState?.let {
+        it.lastPosition > 0 || it.timeRemaining > 0 || it.hasBeenWatched
+      } == true
       val isUnplayed =
-        if (playbackState != null && video.duration > 0) {
+        if (playbackState != null && video.duration > 0 && hasPlaybackProgress) {
           val durationSeconds = video.duration / 1000
           val watched = durationSeconds - playbackState.timeRemaining.toLong()
           val progressValue =
             (watched.toFloat() / durationSeconds.toFloat()).coerceIn(0f, 1f)
           parameters.watchedThreshold <= 0 || progressValue < (parameters.watchedThreshold / 100f)
         } else {
-          playbackState == null
+          playbackState?.hasBeenWatched != true
         }
 
       playbackState?.hasBeenWatched != true &&
@@ -538,16 +565,11 @@ class FolderListViewModel(
       return result
     }
 
-    class Builder(
-      private val folders: List<VideoFolder>,
-    ) {
+    class Builder(private val folders: List<VideoFolder>) {
       private var entries = LongArray(256)
       private var size = 0
 
-      fun add(
-        identifiers: Collection<String>,
-        folderIndex: Int,
-      ) {
+      fun add(identifiers: Collection<String>, folderIndex: Int) {
         for (identifier in identifiers) {
           if (size == entries.size) entries = entries.copyOf(size * 2)
           entries[size++] = (identifier.hashCode().toLong() shl 32) or (folderIndex.toLong() and 0xffffffffL)
@@ -567,7 +589,7 @@ class FolderListViewModel(
     if (keys.isEmpty()) return
     completedFolderDeletionKeys.update { it - keys }
     pendingFolderDeletionKeys.update { it + keys }
-    allVideoFoldersState.update { current -> current.filterNot { folderKey(it) in keys } }
+    _allVideoFolders.update { current -> current.filterNot { folderKey(it) in keys } }
     folderContentRevision.update { it + 1 }
   }
 
@@ -580,7 +602,7 @@ class FolderListViewModel(
     val successfulKeys = requestedKeys - failedKeys
 
     if (failedFolders.isNotEmpty()) {
-      allVideoFoldersState.update { current -> mergeFolders(current, failedFolders) }
+      _allVideoFolders.update { current -> mergeFolders(current, failedFolders) }
       pendingFolderDeletionKeys.update { it - failedKeys }
     }
     // Successful keys remain hidden until a complete scan confirms they disappeared.
@@ -594,17 +616,12 @@ class FolderListViewModel(
     // Keep the last published folders visible while MediaStore is refreshed. A full recursive
     // filesystem walk and MediaScanner.scanFile(storageRoot) do not belong on the interactive
     // refresh path: both can take tens of seconds and overlap the folder query.
-    if (allVideoFoldersState.value.isEmpty()) _isLoading.value = true
+    if (_allVideoFolders.value.isEmpty()) _isLoading.value = true
     MediaFileRepository.invalidateFolderCache()
     MediaStoreGenerationGuard.invalidate(getApplication())
     viewModelScope.launch(Dispatchers.IO) {
       loadVideoFolders()
-      app.gyrolet.mpvrx.utils.storage.UnindexedVideoDiscovery
-        .refresh(getApplication(), force = true)
-    }
-    // A finished download the scanner has not reached yet used to need several refreshes (#1032).
-    viewModelScope.launch(Dispatchers.IO) {
-      MediaIndexing.indexAndNotify(getApplication(), MediaIndexing.recentPlayableFiles())
+      app.gyrolet.mpvrx.utils.storage.UnindexedVideoDiscovery.refresh(getApplication(), force = true)
     }
   }
 
@@ -615,12 +632,8 @@ class FolderListViewModel(
    * an old device is revisited after a while (Android 10 has no MediaStore generation token).
    */
   suspend fun checkExternalFolderChanges(onResume: Boolean) {
-    if (audioOnly ||
-      currentScanJob?.isActive == true ||
-      !foldersPreferences.hiddenScanEnabled(HiddenScanScope.FOLDERS)
-    ) {
-      return
-    }
+    if (audioOnly || currentScanJob?.isActive == true ||
+      !foldersPreferences.hiddenScanEnabled(HiddenScanScope.FOLDERS)) return
 
     val markerNames =
       (foldersPreferences.hiddenFolderMarkerNames.get() - foldersPreferences.sharedIgnoredMarkers.get())
@@ -628,35 +641,26 @@ class FolderListViewModel(
         .filter { it.isNotEmpty() && '/' !in it && '\\' !in it }
         .map { if (it.startsWith(".")) it else ".$it" }
     val roots = MediaFileRepository.getIndexedNoMediaRootPaths()
-    val directories = (roots + allVideoFoldersState.value.map { it.path }).distinct()
-    val markerSnapshot =
-      directories.associateWith { path ->
-        val directory = File(path)
-        (foldersPreferences.scanDotFolders(HiddenScanScope.FOLDERS) && directory.name.startsWith(".")) ||
-          (
-            foldersPreferences.scanMarkedFolders(
-              HiddenScanScope.FOLDERS,
-            ) &&
-              markerNames.any { File(directory, it).isFile }
-          )
-      }
+    val directories = (roots + _allVideoFolders.value.map { it.path }).distinct()
+    val markerSnapshot = directories.associateWith { path ->
+      val directory = File(path)
+      (foldersPreferences.scanDotFolders(HiddenScanScope.FOLDERS) && directory.name.startsWith(".")) ||
+        (foldersPreferences.scanMarkedFolders(HiddenScanScope.FOLDERS) && markerNames.any { File(directory, it).isFile })
+    }
     val previous = lastHiddenMarkerSnapshot
     lastHiddenMarkerSnapshot = markerSnapshot
 
-    val staleHiddenRoot =
-      roots.any { root ->
-        val directory = File(root)
-        !directory.isDirectory ||
-          !directory.name.startsWith(".") &&
-          markerNames.none { File(directory, it).isFile }
-      }
+    val staleHiddenRoot = roots.any { root ->
+      val directory = File(root)
+      !directory.isDirectory || !directory.name.startsWith(".") &&
+        markerNames.none { File(directory, it).isFile }
+    }
     // Only marker-state transitions matter; scanning new ordinary folders must not
     // bounce us into a second expensive filesystem pass.
-    val markersChanged =
-      previous?.any { (path, wasHidden) ->
-        val isHidden = markerSnapshot[path]
-        isHidden != null && isHidden != wasHidden
-      } == true
+    val markersChanged = previous?.any { (path, wasHidden) ->
+      val isHidden = markerSnapshot[path]
+      isHidden != null && isHidden != wasHidden
+    } == true
     val now = android.os.SystemClock.elapsedRealtime()
     val foregroundRefreshInterval = if (android.os.Build.VERSION.SDK_INT < 30) 20_000L else 60_000L
     val needsForegroundCheck = onResume && now - lastExternalFolderRecheckAt >= foregroundRefreshInterval
@@ -712,7 +716,7 @@ class FolderListViewModel(
       currentScanJob =
         viewModelScope.launch(Dispatchers.IO) {
           try {
-            val hasExistingData = allVideoFoldersState.value.isNotEmpty()
+            val hasExistingData = _allVideoFolders.value.isNotEmpty()
             if (!hasExistingData && !silent) {
               _isLoading.value = true
               _scanStatus.value = "Reading music library..."
@@ -723,7 +727,7 @@ class FolderListViewModel(
                 minimumAudioDurationSeconds = browserPreferences.minimumAudioDurationSeconds.get(),
               )
             ensureActive()
-            if (allVideoFoldersState.value != folders) {
+            if (_allVideoFolders.value != folders) {
               publishFinalFolders(folders)
             }
             _isLoading.value = false
@@ -753,13 +757,13 @@ class FolderListViewModel(
     currentScanJob =
       viewModelScope.launch(Dispatchers.IO) {
         try {
-          val hasExistingData = allVideoFoldersState.value.isNotEmpty()
+          val hasExistingData = _allVideoFolders.value.isNotEmpty()
           if (!hasExistingData && !silent) {
             _isLoading.value = true
             _scanStatus.value = "Reading media library..."
           }
 
-          val previousFolders = allVideoFoldersState.value.associateBy(::folderKey)
+          val previousFolders = _allVideoFolders.value.associateBy(::folderKey)
           val indexedFolders = MediaFileRepository.getIndexedNoMediaFolders()
           ensureActive()
 
@@ -789,28 +793,24 @@ class FolderListViewModel(
           // If there is no existing data, publish immediately so the screen isn't empty.
           // If cached data is already visible, do NOT overwrite with partial mediaStore results!
           if (!hasExistingData) {
-            allVideoFoldersState.value = mediaStoreFolders
+            _allVideoFolders.value = mediaStoreFolders
             _isLoading.value = false
             _hasCompletedInitialLoad.value = true
           }
 
-          val scopedFolders =
-            if (skipMediaStoreScan) {
-              ScopedHiddenFolderScanner.withoutLocalDuplicates(
-                mediaStoreFolders + indexedFolders,
-                MediaFileRepository.getScopedHiddenVideoFolders(
-                  getApplication(),
-                  includeAudioOverride = if (audioOnly) true else null,
-                ),
-              )
-            } else {
-              emptyList()
-            }
+          val scopedFolders = if (skipMediaStoreScan) {
+            ScopedHiddenFolderScanner.withoutLocalDuplicates(
+              mediaStoreFolders + indexedFolders,
+              MediaFileRepository.getScopedHiddenVideoFolders(getApplication(), includeAudioOverride = if (audioOnly) true else null),
+            )
+          } else {
+            emptyList()
+          }
           var visibleFolders = mergeFolders(mediaStoreFolders, indexedFolders, scopedFolders)
           // This already includes the last hidden-folder index. Publish new ordinary folders now,
           // rather than holding them behind hidden discovery and optional metadata enrichment.
-          if (allVideoFoldersState.value != visibleFolders) {
-            allVideoFoldersState.value = visibleFolders
+          if (_allVideoFolders.value != visibleFolders) {
+            _allVideoFolders.value = visibleFolders
           }
           listingReady.complete(Unit)
           Log.d(TAG, "Scanned ${mediaStoreFolders.size} MediaStore and ${indexedFolders.size} indexed folders")
@@ -833,7 +833,7 @@ class FolderListViewModel(
                 ensureActive()
                 visibleFolders = mergeFolders(visibleFolders, batch)
                 if (!hasExistingData) {
-                  allVideoFoldersState.value = visibleFolders
+                  _allVideoFolders.value = visibleFolders
                   if (!silent) _scanStatus.value = "Found ${visibleFolders.size} folders"
                 }
               }
@@ -844,7 +844,7 @@ class FolderListViewModel(
             visibleFolders = mergeFolders(mediaStoreFolders, indexedAfterScan, scopedFolders)
             ensureActive()
             if (!hasExistingData) {
-              allVideoFoldersState.value = visibleFolders
+              _allVideoFolders.value = visibleFolders
             }
           }
 
@@ -864,8 +864,7 @@ class FolderListViewModel(
                 cached.lastModified == folder.lastModified &&
                 cachedIsComplete
               ) {
-                // Only the learned duration is reused; whether the folder is hidden is always fresh.
-                cached.copy(isHidden = folder.isHidden)
+                cached
               } else {
                 needsEnrichment = true
                 folder
@@ -875,42 +874,39 @@ class FolderListViewModel(
           // Render the fresh folder list before potentially slow file-by-file metadata retrieval.
           // A running enrichment job can be cancelled by the next refresh; it must never hold
           // back visible Library updates. Cache and file metadata are reused above when unchanged.
-          if (allVideoFoldersState.value != foldersForEnrichment) {
-            allVideoFoldersState.value = foldersForEnrichment
+          if (_allVideoFolders.value != foldersForEnrichment) {
+            _allVideoFolders.value = foldersForEnrichment
           }
           _isLoading.value = false
           _hasCompletedInitialLoad.value = true
 
-          val needsDurationEnrichment =
-            needsEnrichment &&
-              foldersForEnrichment.isNotEmpty() &&
-              MetadataRetrieval.isFolderMetadataNeeded(browserPreferences)
+          val needsDurationEnrichment = needsEnrichment && foldersForEnrichment.isNotEmpty() &&
+            MetadataRetrieval.isFolderMetadataNeeded(browserPreferences)
 
-          val finalFolders =
-            if (needsDurationEnrichment) {
-              if (!silent) {
-                _isEnriching.value = true
-                _scanStatus.value = "Processing metadata..."
-              }
-              val enrichedFolders =
-                MetadataRetrieval.enrichFoldersIfNeeded(
-                  context = getApplication(),
-                  folders = foldersForEnrichment.filterNot { isDeferredDurationFolder(it, hiddenFolderKeys) },
-                  browserPreferences = browserPreferences,
-                  metadataCache = metadataCache,
-                  onProgress = { processed, total ->
-                    if (!silent) _scanStatus.value = "Processing metadata $processed/$total"
-                  },
-                )
-              ensureActive()
-              val enrichedByKey = enrichedFolders.associateBy(::folderKey)
-              foldersForEnrichment.map { enrichedByKey[folderKey(it)] ?: it }
-            } else {
-              foldersForEnrichment
+          val finalFolders = if (needsDurationEnrichment) {
+            if (!silent) {
+              _isEnriching.value = true
+              _scanStatus.value = "Processing metadata..."
             }
+            val enrichedFolders =
+              MetadataRetrieval.enrichFoldersIfNeeded(
+                context = getApplication(),
+                folders = foldersForEnrichment.filterNot { isDeferredDurationFolder(it, hiddenFolderKeys) },
+                browserPreferences = browserPreferences,
+                metadataCache = metadataCache,
+                onProgress = { processed, total ->
+                  if (!silent) _scanStatus.value = "Processing metadata $processed/$total"
+                },
+              )
+            ensureActive()
+            val enrichedByKey = enrichedFolders.associateBy(::folderKey)
+            foldersForEnrichment.map { enrichedByKey[folderKey(it)] ?: it }
+          } else {
+            foldersForEnrichment
+          }
 
           // Only publish if the list has actually changed from what is currently displayed
-          if (allVideoFoldersState.value != finalFolders) {
+          if (_allVideoFolders.value != finalFolders) {
             publishFinalFolders(finalFolders)
           }
 
@@ -943,14 +939,10 @@ class FolderListViewModel(
    * hidden folders reuse the metadata cache. A positive total can still be partial, so it must not
    * prevent missing durations being filled.
    */
-  private suspend fun enrichDeferredFolderDurations(
-    folders: List<VideoFolder>,
-    hiddenKeys: Set<String>,
-  ) {
-    val pending =
-      folders.filter {
-        isDeferredDurationFolder(it, hiddenKeys) && it.videoCount > 0
-      }
+  private suspend fun enrichDeferredFolderDurations(folders: List<VideoFolder>, hiddenKeys: Set<String>) {
+    val pending = folders.filter {
+      isDeferredDurationFolder(it, hiddenKeys) && it.videoCount > 0
+    }
     for (folder in pending) {
       currentCoroutineContext().ensureActive()
       val totalDuration =
@@ -958,17 +950,15 @@ class FolderListViewModel(
           .enrichFolderIfNeeded(getApplication(), folder, browserPreferences, metadataCache, audioOnly = audioOnly)
           .totalDuration
       val key = folderKey(folder)
-      allVideoFoldersState.update { current ->
+      _allVideoFolders.update { current ->
         current.map { if (folderKey(it) == key) it.copy(totalDuration = totalDuration) else it }
       }
     }
   }
 
   /** Folders listed without a blocking metadata pass: Play Store grants and indexed hidden folders. */
-  private fun isDeferredDurationFolder(
-    folder: VideoFolder,
-    hiddenKeys: Set<String>,
-  ): Boolean = ScopedHiddenFolderScanner.isScopedFolder(folder.bucketId) || folderKey(folder) in hiddenKeys
+  private fun isDeferredDurationFolder(folder: VideoFolder, hiddenKeys: Set<String>): Boolean =
+    ScopedHiddenFolderScanner.isScopedFolder(folder.bucketId) || folderKey(folder) in hiddenKeys
 
   private fun folderKey(folder: VideoFolder): String =
     if (ScopedHiddenFolderScanner.isScopedFolder(folder.path)) {
@@ -987,7 +977,7 @@ class FolderListViewModel(
       pendingFolderDeletionKeys.update { it - confirmedDeletionKeys }
       completedFolderDeletionKeys.update { it - confirmedDeletionKeys }
     }
-    allVideoFoldersState.value = folders
+    _allVideoFolders.value = folders
   }
 
   private fun mergeFolders(vararg groups: List<VideoFolder>): List<VideoFolder> {
